@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROJECT LAUNCH // 项目启动</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* ===== Nothing Dark Design Tokens ===== */
+  :root {
+    --bg: #0b0b0c;
+    --bg-2: #0f0f11;
+    --panel: rgba(255,255,255,.035);
+    --panel-2: rgba(255,255,255,.06);
+    --line: rgba(255,255,255,.13);
+    --line-2: rgba(255,255,255,.07);
+    --text: #f4f4f5;
+    --dim: #8d8d92;
+    --dim-2: #5f5f65;
+    --red: #ff3621;
+    --red-soft: rgba(255,54,33,.16);
+    --red-glow: rgba(255,54,33,.55);
+    --green: #30d158;
+    --mono: 'VT323', monospace;
+    --pixel: 'Silkscreen','VT323',monospace;
+    --sans: 'Inter','Noto Sans SC','PingFang SC',-apple-system,BlinkMacSystemFont,'Microsoft YaHei',sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:
+      radial-gradient(900px 500px at 78% -5%, rgba(255,54,33,.10), transparent 55%),
+      linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px) 0 0/42px 42px,
+      linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px) 0 0/42px 42px,
+      var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 100px;
+  }
+
+  /* ===== 顶部栏 ===== */
+  .topbar {
+    background: rgba(11,11,12,.85);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--red);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 20px;
+    color: var(--red);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: '';
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 7px; height: 7px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+  .topbar h1 {
+    font-family: var(--pixel);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .topbar .subtitle {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .step-indicator {
+    font-family: var(--pixel);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+  .step-indicator b {
+    color: var(--red);
+    font-weight: 400;
+  }
+
+  /* ===== 主体容器 ===== */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  /* ===== Section 通用 ===== */
+  .section {
+    background: var(--panel);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .section.active {
+    border-color: var(--line);
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 24px;
+    color: var(--red);
+    line-height: 1;
+  }
+  .section-name {
+    font-family: var(--pixel);
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .section-desc {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+  .section-status {
+    font-family: var(--pixel);
+    font-size: 9px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .status-ready {
+    color: var(--green);
+    border-color: var(--green);
+    background: rgba(48,209,88,.08);
+  }
+  .status-config {
+    color: var(--red);
+    border-color: var(--red);
+    background: var(--red-soft);
+  }
+
+  /* ===== 表单元素 ===== */
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-label {
+    font-family: var(--pixel);
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .form-input, .form-textarea {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--sans);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus {
+    border-color: var(--red);
+    background: rgba(255,54,33,.04);
+    box-shadow: 0 0 12px rgba(255,54,33,.1);
+  }
+  .form-input::placeholder, .form-textarea::placeholder {
+    color: var(--dim-2);
+    font-family: var(--mono);
+    font-size: 15px;
+  }
+  .form-textarea {
+    resize: vertical;
+    min-height: 70px;
+    line-height: 1.5;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* ===== Agent 列表 ===== */
+  .agent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .agent-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    transition: all 0.2s;
+  }
+  .agent-row.connected {
+    border-color: rgba(48,209,88,.3);
+    background: rgba(48,209,88,.03);
+  }
+  .agent-color {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,.2);
+  }
+  .agent-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .agent-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .agent-role {
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.3;
+  }
+  .agent-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .toggle-label {
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: var(--dim-2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .toggle-switch {
+    width: 36px; height: 20px;
+    background: var(--line-2);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--line);
+  }
+  .toggle-switch.on {
+    background: var(--red);
+    border-color: var(--red);
+    box-shadow: 0 0 8px var(--red-glow);
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    background: var(--text);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  .toggle-switch.on::after {
+    left: 18px;
+  }
+  .agent-remove {
+    color: var(--dim-2);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .agent-remove:hover {
+    color: var(--red);
+    background: var(--red-soft);
+  }
+
+  .add-agent-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--dim);
+    font-family: var(--pixel);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-agent-btn:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-soft);
+  }
+
+  /* ===== 工作空间 ===== */
+  .workspace-preview {
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--dim);
+    line-height: 1.6;
+    word-break: break-all;
+  }
+  .workspace-preview .path { color: var(--text); }
+  .workspace-preview .exists { color: var(--green); }
+  .workspace-preview .missing { color: var(--red); }
+
+  /* ===== 交接文档 ===== */
+  .doc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--red);
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .doc-link:hover { opacity: 0.7; text-decoration: underline; }
+
+  /* ===== 底部启动栏 ===== */
+  .launch-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(11,11,12,.95);
+    border-top: 1px solid var(--line);
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .launch-summary {
+    display: flex;
+    gap: 24px;
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--dim);
+  }
+  .launch-summary b {
+    color: var(--text);
+    font-weight: 400;
+  }
+  .launch-summary .connected-count {
+    color: var(--green);
+  }
+  .launch-btn {
+    padding: 14px 36px;
+    background: var(--red);
+    color: #fff;
+    border: 1px solid var(--red);
+    border-radius: var(--radius-sm);
+    font-family: var(--pixel);
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .launch-btn:hover {
+    background: #ff4a37;
+    box-shadow: 0 0 24px var(--red-glow);
+    transform: translateY(-1px);
+  }
+  .launch-btn:active { transform: translateY(0); }
+  .launch-btn:disabled {
+    background: var(--dim-2);
+    border-color: var(--dim-2);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+  .launch-btn .arrow {
+    font-size: 16px;
+  }
+
+  /* ===== 新增 Agent 弹窗 ===== */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 400px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .modal::before, .modal::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+  }
+  .modal::before {
+    top: -1px; left: -1px;
+    border-top: 2px solid var(--red);
+    border-left: 2px solid var(--red);
+  }
+  .modal::after {
+    bottom: -1px; right: -1px;
+    border-bottom: 2px solid var(--red);
+    border-right: 2px solid var(--red);
+  }
+  .modal h3 {
+    font-family: var(--pixel);
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .modal-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-family: var(--pixel);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid;
+  }
+  .modal-btn.primary {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+  }
+  .modal-btn.primary:hover { box-shadow: 0 0 16px var(--red-glow); }
+  .modal-btn.secondary {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--dim);
+  }
+  .modal-btn.secondary:hover { border-color: var(--text); color: var(--text); }
+
+  .color-picker-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .color-swatch {
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .color-swatch.selected {
+    border-color: var(--text);
+    transform: scale(1.1);
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dim-2); }
+</style>
+</head>
+<body>
+
+<!-- 顶部栏 -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">C</div>
+    <div>
+      <h1>PROJECT LAUNCH // 项目启动配置</h1>
+      <div class="subtitle">CONFIGURE AGENTS, WORKSPACE & PROJECT BEFORE START</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="step-indicator">STEP <b>01</b> / 02 — CONFIG</div>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div class="container">
+
+  <!-- Section 1: 项目信息 -->
+  <div class="section active" id="section-project">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="section-num">01</span>
+        <div>
+          <div class="section-name">项目信息 // PROJECT</div>
+          <div class="section-desc">项目名称、描述、交接文档</div>
+        </div>
+      </div>
+      <div class="section-status status-ready" id="status-project">READY</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">项目名称 // PROJECT NAME</label>
+      <input type="text" class="form-input" id="project-name" placeholder="> 输入项目名称..." />
+    </div>
+    <div class="form-group">
+      <label class="form-label">项目描述 // PROJECT DESCRIPTION</label>
+      <textarea class="form-textarea" id="project-desc" placeholder="> 简要描述项目目标和范围..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">交接文档 // HANDOVER DOC</label>
+        <input type="text" class="form-input" id="handover-doc" placeholder="> /path/to/memo.md" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">记忆文件 // MEMORY FILE</label>
+        <input type="text" class="form-input" id="memory-file" placeholder="> /path/to/memory.md" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Agent 阵容 -->
+  <div class="section" id="section-agents">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="section-num">02</span>
+        <div>
+          <div class="section-name">Agent 阵容 // AGENTS</div>
+          <div class="section-desc">选择参与的 Agent，确认接入状态</div>
+        </div>
+      </div>
+      <div class="section-status status-config" id="status-agents"><span id="connected-count">0</span>/<span id="total-count">0</span> CONNECTED</div>
+    </div>
+    <div class="agent-list" id="agent-list"></div>
+    <button class="add-agent-btn" onclick="showAddAgentModal()">+ 添加 Agent // ADD AGENT</button>
+  </div>
+
+  <!-- Section 3: 工作空间 -->
+  <div class="section" id="section-workspace">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="section-num">03</span>
+        <div>
+          <div class="section-name">工作空间 // WORKSPACE</div>
+          <div class="section-desc">项目文件所在目录</div>
+        </div>
+      </div>
+      <div class="section-status status-ready" id="status-workspace">READY</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">工作空间路径 // WORKSPACE PATH</label>
+      <input type="text" class="form-input" id="workspace-path" placeholder="> /path/to/project" />
+    </div>
+    <div class="workspace-preview" id="workspace-preview">
+      路径验证中...
+    </div>
+  </div>
+
+</div>
+
+<!-- 底部启动栏 -->
+<div class="launch-bar">
+  <div class="launch-summary">
+    <span>项目: <b id="summary-project">—</b></span>
+    <span>Agent: <b class="connected-count" id="summary-agents">0</b> 已接入</span>
+    <span>工作空间: <b id="summary-workspace">—</b></span>
+  </div>
+  <button class="launch-btn" id="launch-btn" onclick="launchProject()">
+    启动项目 // LAUNCH <span class="arrow">→</span>
+  </button>
+</div>
+
+<!-- 新增 Agent 弹窗 -->
+<div class="modal-overlay" id="add-agent-modal">
+  <div class="modal">
+    <h3>添加 Agent // ADD AGENT</h3>
+    <div class="form-group">
+      <label class="form-label">名称 // NAME</label>
+      <input type="text" class="form-input" id="new-agent-name" placeholder="> Agent 名称..." />
+    </div>
+    <div class="form-group">
+      <label class="form-label">角色 // ROLE</label>
+      <input type="text" class="form-input" id="new-agent-role" placeholder="> 角色描述..." />
+    </div>
+    <div class="form-group">
+      <label class="form-label">颜色 // COLOR</label>
+      <div class="color-picker-row" id="color-picker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="hideAddAgentModal()">取消 // CANCEL</button>
+      <button class="modal-btn primary" onclick="addAgent()">确认 // CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 全局状态 =====
+let config = null;
+let selectedColor = '#ff3621';
+
+const COLOR_OPTIONS = [
+  '#ff3621', '#ff9f0a', '#ffd60a', '#30d158',
+  '#64d2ff', '#2997ff', '#bf5af2', '#ff375f',
+  '#a1a1a6', '#f4f4f5'
+];
+
+// ===== 初始化 =====
+async function init() {
+  initColorPicker();
+  await loadConfig();
+  setupEventListeners();
+  updateSummary();
+}
+
+async function loadConfig() {
+  try {
+    const resp = await fetch('/api/config');
+    config = await resp.json();
+    fillForm();
+    renderAgentList();
+    validateWorkspace();
+  } catch (e) {
+    console.error('加载配置失败:', e);
+  }
+}
+
+function fillForm() {
+  document.getElementById('project-name').value = config.meta?.project_name || '';
+  document.getElementById('project-desc').value = config.meta?.project_desc || '';
+  document.getElementById('handover-doc').value = config.meta?.handover_doc || '';
+  document.getElementById('memory-file').value = config.meta?.memory_file || '';
+  document.getElementById('workspace-path').value = config.workspace?.path || '';
+}
+
+// ===== Agent 列表渲染 =====
+function renderAgentList() {
+  const container = document.getElementById('agent-list');
+  container.innerHTML = config.agents.map((agent, idx) => `
+    <div class="agent-row ${agent.connected ? 'connected' : ''}" data-idx="${idx}">
+      <div class="agent-color" style="background:${agent.color};"></div>
+      <div class="agent-info">
+        <div class="agent-name">${agent.name}</div>
+        <div class="agent-role">${agent.role}</div>
+      </div>
+      <div class="agent-toggle">
+        <span class="toggle-label">${agent.connected ? 'ONLINE' : 'OFFLINE'}</span>
+        <div class="toggle-switch ${agent.connected ? 'on' : ''}" onclick="toggleAgent(${idx})"></div>
+      </div>
+      <div class="agent-remove" onclick="removeAgent(${idx})" title="移除">✕</div>
+    </div>
+  `).join('');
+
+  const connected = config.agents.filter(a => a.connected).length;
+  document.getElementById('connected-count').textContent = connected;
+  document.getElementById('total-count').textContent = config.agents.length;
+  updateSummary();
+}
+
+function toggleAgent(idx) {
+  config.agents[idx].connected = !config.agents[idx].connected;
+  renderAgentList();
+}
+
+function removeAgent(idx) {
+  if (config.agents.length <= 1) {
+    alert('至少保留一个 Agent');
+    return;
+  }
+  config.agents.splice(idx, 1);
+  renderAgentList();
+}
+
+// ===== 新增 Agent =====
+function initColorPicker() {
+  const container = document.getElementById('color-picker');
+  container.innerHTML = COLOR_OPTIONS.map((c, i) => `
+    <div class="color-swatch ${i === 0 ? 'selected' : ''}"
+         style="background:${c};"
+         data-color="${c}"
+         onclick="selectColor('${c}', this)"></div>
+  `).join('');
+}
+
+function selectColor(color, el) {
+  selectedColor = color;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function showAddAgentModal() {
+  document.getElementById('add-agent-modal').classList.add('show');
+  document.getElementById('new-agent-name').value = '';
+  document.getElementById('new-agent-role').value = '';
+}
+
+function hideAddAgentModal() {
+  document.getElementById('add-agent-modal').classList.remove('show');
+}
+
+function addAgent() {
+  const name = document.getElementById('new-agent-name').value.trim();
+  const role = document.getElementById('new-agent-role').value.trim();
+  if (!name) { alert('请输入 Agent 名称'); return; }
+
+  const id = 'agent_' + Date.now();
+  config.agents.push({
+    id, name, role: role || '待定义',
+    color: selectedColor,
+    connected: true
+  });
+  hideAddAgentModal();
+  renderAgentList();
+}
+
+// ===== 工作空间验证 =====
+function validateWorkspace() {
+  const path = document.getElementById('workspace-path').value.trim();
+  const preview = document.getElementById('workspace-preview');
+  if (!path) {
+    preview.innerHTML = '<span class="missing">⚠ 未设置工作空间路径</span>';
+    return;
+  }
+  // 前端无法直接验证本地路径，显示路径并标记为已配置
+  preview.innerHTML = `工作空间: <span class="path">${path}</span><br>状态: <span class="exists">✓ 已配置（启动时验证）</span>`;
+  updateSummary();
+}
+
+// ===== 摘要更新 =====
+function updateSummary() {
+  const name = document.getElementById('project-name').value.trim();
+  const path = document.getElementById('workspace-path').value.trim();
+  const connected = config ? config.agents.filter(a => a.connected).length : 0;
+
+  document.getElementById('summary-project').textContent = name || '未命名';
+  document.getElementById('summary-agents').textContent = connected;
+  document.getElementById('summary-workspace').textContent = path ? path.split('/').pop() : '未设置';
+
+  // 启动按钮状态
+  const canLaunch = name && connected >= 1 && path;
+  document.getElementById('launch-btn').disabled = !canLaunch;
+}
+
+// ===== 启动项目 =====
+async function launchProject() {
+  // 收集配置
+  config.meta.project_name = document.getElementById('project-name').value.trim();
+  config.meta.project_desc = document.getElementById('project-desc').value.trim();
+  config.meta.handover_doc = document.getElementById('handover-doc').value.trim();
+  config.meta.memory_file = document.getElementById('memory-file').value.trim();
+  config.workspace.path = document.getElementById('workspace-path').value.trim();
+  config.workspace.name = config.workspace.path.split('/').pop();
+  config.meta.status = 'launched';
+  config.meta.launched_at = new Date().toISOString();
+
+  // 保存配置
+  try {
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+
+    // 跳转到看板
+    window.location.href = '/collab_board_nothing.html';
+  } catch (e) {
+    console.error('保存配置失败:', e);
+    alert('保存配置失败，请检查服务器状态');
+  }
+}
+
+// ===== 事件监听 =====
+function setupEventListeners() {
+  document.getElementById('project-name').addEventListener('input', updateSummary);
+  document.getElementById('workspace-path').addEventListener('input', validateWorkspace);
+
+  // 点击弹窗外部关闭
+  document.getElementById('add-agent-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'add-agent-modal') hideAddAgentModal();
+  });
+
+  // ESC 关闭弹窗
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideAddAgentModal();
+  });
+}
+
+// ===== 启动 =====
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# ===== 多Agent协同看板 - .gitignore =====
+
+# 项目数据（包含用户数据，不上传）
+collab_board.json
+project_config.json
+processed_msg_ids.json
+
+# 日志文件
+*.log
+api_calls.log
+
+# 锁文件
+*.lock
+
+# Python缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 工作目录
+.workbuddy/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
