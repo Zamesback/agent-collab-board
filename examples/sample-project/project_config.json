@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "project_name": "示例项目",
+    "workspace": "~/Projects/sample-project",
+    "handoff": "这是一个示例项目的交接文件内容。\n\n可以在这里写项目背景、需求文档、历史讨论等。"
+  },
+  "agents": [
+    {"id": "user", "name": "Zames", "role": "项目主导"},
+    {"id": "planner", "name": "规划Agent", "role": "任务拆解"},
+    {"id": "builder", "name": "执行Agent", "role": "代码编写"}
+  ],
+  "api_config": {
+    "enabled": false,
+    "api_key": "",
+    "base_url": "https://api.openai.com/v1",
+    "model": "gpt-4o",
+    "schedule": {
+      "enabled": false,
+      "interval_minutes": 30
+    }
+  },
+  "trigger_templates": {
+    "per_agent": "请读取这个文件：{json_path}\n\n这是一个多Agent协同看板的数据文件。你是「{agent_name}」，角色：{agent_role}。\n看板上有新消息@了你，请读取文件了解项目状态，处理相关任务，并把结果写回该文件（更新任务状态/发消息）。",
+    "global": "请读取这个文件：{json_path}\n\n这是一个多Agent协同看板的数据文件。请检查有没有新消息或待处理任务，如果有需要你处理的内容，请执行并把结果写回该文件。"
+  }
+}
