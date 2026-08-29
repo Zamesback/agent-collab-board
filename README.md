@@ -5,6 +5,26 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-orange.svg)](#)
+[![Stars](https://img.shields.io/github/stars/Zamesback/agent-collab-board.svg)](https://github.com/Zamesback/agent-collab-board/stargazers)
+
+---
+
+## 🖼️ 界面预览
+
+### 项目管理器首页
+所有项目一目了然，点击卡片直接进入，一键创建新项目。
+
+![项目管理器首页](docs/screenshots/01-project-manager.png)
+
+### 看板主界面
+任务看板 + 实时聊天 + Agent状态，Nothing风格深色UI。
+
+![看板主界面](docs/screenshots/02-board-main.png)
+
+### 启动定义页
+选择接入Agent、设置工作空间、填写交接文件，一站式启动项目。
+
+![启动定义页](docs/screenshots/03-launch-page.png)
 
 ---
 
@@ -41,7 +61,7 @@
 
 ### 1. 克隆项目
 ```bash
-git clone https://github.com/your-username/agent-collab-board.git
+git clone https://github.com/Zamesback/agent-collab-board.git
 cd agent-collab-board
 ```
 
