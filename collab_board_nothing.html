@@ -707,6 +707,257 @@
     color: #fff;
   }
 
+  /* ===== 接入三步引导面板（T9.3）===== */
+  .onboard-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .onboard-overlay.show { display: flex; }
+  .onboard-modal {
+    background: var(--panel);
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    width: 520px;
+    max-width: 90vw;
+    padding: 28px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .onboard-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none;
+    border: none;
+    color: var(--dim-2);
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .onboard-close:hover { color: var(--text); }
+  .onboard-title {
+    font-family: var(--pixel);
+    font-size: 16px;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .onboard-subtitle {
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 24px;
+  }
+  .onboard-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .onboard-steps::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: var(--line-2);
+    z-index: 0;
+  }
+  .onboard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .onboard-step-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--panel-2);
+    border: 2px solid var(--line-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--pixel);
+    font-size: 12px;
+    color: var(--dim-2);
+    transition: all 0.3s;
+  }
+  .onboard-step.active .onboard-step-num {
+    border-color: var(--red);
+    background: rgba(255,54,33,.15);
+    color: var(--red);
+  }
+  .onboard-step.done .onboard-step-num {
+    border-color: var(--green);
+    background: rgba(34,197,94,.15);
+    color: var(--green);
+  }
+  .onboard-step-label {
+    font-size: 10px;
+    color: var(--dim-2);
+    font-family: var(--mono);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .onboard-step.active .onboard-step-label { color: var(--text); }
+  .onboard-step.done .onboard-step-label { color: var(--green); }
+  .onboard-content {
+    min-height: 180px;
+    margin-bottom: 24px;
+  }
+  .onboard-step-title {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .onboard-step-desc {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .onboard-copy-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--red);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-family: var(--pixel);
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .onboard-copy-btn:hover { background: #e02e1c; transform: translateY(-1px); }
+  .onboard-copy-btn.copied { background: var(--green); }
+  .onboard-hint {
+    font-size: 11px;
+    color: var(--dim-2);
+    text-align: center;
+    font-family: var(--mono);
+  }
+  .onboard-agent-list {
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  .onboard-agent-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .onboard-agent-row:last-child { border-bottom: none; }
+  .onboard-agent-name { font-size: 12px; color: var(--text); }
+  .onboard-agent-status {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .onboard-agent-status.online { background: rgba(34,197,94,.15); color: var(--green); }
+  .onboard-agent-status.offline { background: rgba(255,54,33,.1); color: var(--dim-2); }
+  .onboard-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .onboard-btn-secondary {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--line-2);
+    border-radius: 6px;
+    color: var(--dim);
+    font-family: var(--pixel);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .onboard-btn-secondary:hover { border-color: var(--text); color: var(--text); }
+  .onboard-btn-primary {
+    padding: 10px 20px;
+    background: var(--red);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-family: var(--pixel);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .onboard-btn-primary:hover { background: #e02e1c; }
+  .onboard-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Agent选择器样式 */
+  .onboard-agent-select-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--panel-2);
+  }
+  .onboard-agent-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .onboard-agent-option:last-child { border-bottom: none; }
+  .onboard-agent-option:hover { background: rgba(255,54,33,.05); }
+  .onboard-agent-option.selected {
+    background: rgba(255,54,33,.1);
+    border-left: 3px solid var(--red);
+  }
+  .onboard-agent-option-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .onboard-agent-option-name {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .onboard-agent-option-role {
+    font-size: 11px;
+    color: var(--dim);
+    font-family: var(--mono);
+  }
+  .onboard-agent-option-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--line-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--red);
+    transition: all 0.2s;
+  }
+  .onboard-agent-option.selected .onboard-agent-option-check {
+    border-color: var(--red);
+    background: rgba(255,54,33,.15);
+  }
+
   /* ===== 自动触发开关 + AI思考动画（T3.5/T3.6）===== */
   .auto-trigger-ctl {
     display: flex;
@@ -1101,7 +1352,7 @@
         <label class="switch small"><input type="checkbox" id="auto-trigger-toggle" onchange="toggleAutoTrigger()" /><span class="slider"></span></label>
       </div>
       <button class="global-copy-btn" id="global-copy-btn" onclick="copyGlobalTrigger()">复制检查指令 // COPY</button>
-      <button class="onboard-btn" id="onboard-btn" onclick="copyOnboardingGuide()">接入引导 // GUIDE</button>
+      <button class="onboard-btn" id="onboard-btn" onclick="openOnboardingGuide()">接入引导 // GUIDE</button>
     </div>
     <div class="ai-thinking" id="ai-thinking"><span>AI 正在思考</span><i></i><i></i><i></i></div>
     <div class="chat-messages" id="chat-messages"></div>
@@ -1176,6 +1427,41 @@
       <button class="status-btn" onclick="saveApiConfig()">保存</button>
     </div>
     <div class="api-hint">api_key 仅加密存储于本地 project_config.json（已 gitignore），不会明文落盘。API 连续失败 3 次会自动关闭自动触发，不影响看板基本功能。</div>
+  </div>
+</div>
+
+<!-- 接入三步引导面板（T9.3） -->
+<div class="onboard-overlay" id="onboard-overlay" onclick="closeOnboardingGuide(event)">
+  <div class="onboard-modal" onclick="event.stopPropagation()">
+    <button class="onboard-close" onclick="closeOnboardingGuide()">✕</button>
+    <div class="onboard-title">AGENT 接入引导 // ONBOARDING</div>
+    <div class="onboard-subtitle">三步完成 Agent 接入，无需手动搬运配置</div>
+
+    <!-- 步骤指示器 -->
+    <div class="onboard-steps">
+      <div class="onboard-step active" id="onboard-step-1">
+        <div class="onboard-step-num">1</div>
+        <div class="onboard-step-label">复制引导</div>
+      </div>
+      <div class="onboard-step" id="onboard-step-2">
+        <div class="onboard-step-num">2</div>
+        <div class="onboard-step-label">粘贴给Agent</div>
+      </div>
+      <div class="onboard-step" id="onboard-step-3">
+        <div class="onboard-step-num">3</div>
+        <div class="onboard-step-label">确认接入</div>
+      </div>
+    </div>
+
+    <!-- 步骤内容 -->
+    <div class="onboard-content" id="onboard-content">
+      <!-- 动态填充 -->
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="onboard-actions" id="onboard-actions">
+      <!-- 动态填充 -->
+    </div>
   </div>
 </div>
 
@@ -1658,6 +1944,218 @@ async function copyOnboardingGuide() {
     }
   } catch (e) {
     console.error('获取接入引导失败:', e);
+  }
+}
+
+// ===== 接入三步引导面板（T9.3）=====
+let onboardCurrentStep = 1;
+let onboardGuideContent = '';
+let onboardStatusCheckTimer = null;
+let onboardAgentsList = [];
+let onboardSelectedAgent = null;
+
+async function openOnboardingGuide() {
+  onboardCurrentStep = 1;
+  onboardSelectedAgent = null;
+  // 获取Agent列表
+  try {
+    const resp = await fetch('/api/agents/status');
+    const data = await resp.json();
+    onboardAgentsList = data.agents || [];
+  } catch (e) {
+    console.error('获取Agent列表失败:', e);
+    onboardAgentsList = [];
+  }
+  document.getElementById('onboard-overlay').classList.add('show');
+  renderOnboardingStep();
+}
+
+function closeOnboardingGuide(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById('onboard-overlay').classList.remove('show');
+  if (onboardStatusCheckTimer) {
+    clearInterval(onboardStatusCheckTimer);
+    onboardStatusCheckTimer = null;
+  }
+}
+
+function renderOnboardingStep() {
+  // 更新步骤指示器
+  for (let i = 1; i <= 3; i++) {
+    const stepEl = document.getElementById(`onboard-step-${i}`);
+    stepEl.classList.remove('active', 'done');
+    if (i < onboardCurrentStep) stepEl.classList.add('done');
+    else if (i === onboardCurrentStep) stepEl.classList.add('active');
+  }
+
+  const contentEl = document.getElementById('onboard-content');
+  const actionsEl = document.getElementById('onboard-actions');
+
+  if (onboardCurrentStep === 1) {
+    // 第一步：选择Agent + 复制专属接入引导
+    const agentOptions = onboardAgentsList.map(a => `
+      <div class="onboard-agent-option ${onboardSelectedAgent === a.id ? 'selected' : ''}" onclick="selectOnboardingAgent('${a.id}')">
+        <div class="onboard-agent-option-info">
+          <span class="onboard-agent-option-name">${escapeHtmlSafe(a.name || a.id)}</span>
+          <span class="onboard-agent-option-role">${escapeHtmlSafe(a.role || '未指定角色')}</span>
+        </div>
+        <div class="onboard-agent-option-check">${onboardSelectedAgent === a.id ? '✓' : ''}</div>
+      </div>
+    `).join('');
+
+    const copyBtnDisabled = onboardSelectedAgent ? '' : 'disabled';
+    const copyBtnText = onboardSelectedAgent ? '复制专属接入引导 // COPY' : '请先选择 Agent';
+
+    contentEl.innerHTML = `
+      <div class="onboard-step-title">第一步：选择 Agent 并复制引导</div>
+      <div class="onboard-step-desc">
+        先选择你要接入的 Agent，然后复制为它生成的专属接入引导。
+        专属引导开头会明确告诉 Agent 它的身份、ID 和角色，无需手动补充。
+      </div>
+      <div class="onboard-agent-select-list">
+        ${agentOptions || '<div style="text-align:center;color:var(--dim-2);padding:20px;">暂无 Agent，请先在项目设置中添加</div>'}
+      </div>
+      <button class="onboard-copy-btn" id="onboard-copy-btn" onclick="copyOnboardingContent()" ${copyBtnDisabled}>
+        ${copyBtnText}
+      </button>
+      <div class="onboard-hint">选择 Agent 后，复制按钮才会启用</div>
+    `;
+    actionsEl.innerHTML = `
+      <button class="onboard-btn-secondary" onclick="closeOnboardingGuide()">取消</button>
+      <button class="onboard-btn-primary" onclick="nextOnboardingStep()" id="onboard-next-btn" ${onboardGuideContent ? '' : 'disabled'}>下一步</button>
+    `;
+  } else if (onboardCurrentStep === 2) {
+    // 第二步：粘贴给Agent
+    contentEl.innerHTML = `
+      <div class="onboard-step-title">第二步：粘贴给 Agent</div>
+      <div class="onboard-step-desc">
+        打开你要接入的 AI Agent（如豆包、ChatGPT、Claude 等），将刚才复制的接入引导粘贴到对话中并发送。
+        <br><br>
+        Agent 会读取配置并自动接入看板。接入后它会在看板中发送一条上线消息。
+      </div>
+      <div class="onboard-hint">💡 提示：确保 Agent 能访问本地服务器（localhost:8766）</div>
+    `;
+    actionsEl.innerHTML = `
+      <button class="onboard-btn-secondary" onclick="prevOnboardingStep()">上一步</button>
+      <button class="onboard-btn-primary" onclick="nextOnboardingStep()">我已粘贴，下一步</button>
+    `;
+  } else if (onboardCurrentStep === 3) {
+    // 第三步：确认接入
+    contentEl.innerHTML = `
+      <div class="onboard-step-title">第三步：确认接入</div>
+      <div class="onboard-step-desc">
+        等待 Agent 接入。接入成功后，下方列表会显示 Agent 的在线状态。
+        系统会每 3 秒自动检测一次 Agent 状态。
+      </div>
+      <div class="onboard-agent-list" id="onboard-agent-list">
+        <div style="text-align:center;color:var(--dim-2);padding:20px;">正在检测 Agent 状态...</div>
+      </div>
+    `;
+    actionsEl.innerHTML = `
+      <button class="onboard-btn-secondary" onclick="prevOnboardingStep()">上一步</button>
+      <button class="onboard-btn-primary" onclick="closeOnboardingGuide()">完成</button>
+    `;
+    // 开始检测Agent状态
+    startOnboardStatusCheck();
+  }
+}
+
+function selectOnboardingAgent(agentId) {
+  onboardSelectedAgent = agentId;
+  onboardGuideContent = ''; // 重置，需要重新获取专属引导
+  renderOnboardingStep();
+}
+
+async function copyOnboardingContent() {
+  if (!onboardSelectedAgent) {
+    showToast('请先选择一个 Agent');
+    return;
+  }
+  // 根据选择的Agent获取专属接入引导
+  try {
+    const resp = await fetch(`/api/onboarding?agent_id=${encodeURIComponent(onboardSelectedAgent)}`);
+    const data = await resp.json();
+    onboardGuideContent = data.content || '';
+  } catch (e) {
+    console.error('获取专属接入引导失败:', e);
+  }
+  if (!onboardGuideContent) {
+    showToast('获取接入引导失败');
+    return;
+  }
+  const ok = await copyToClipboard(onboardGuideContent);
+  const btn = document.getElementById('onboard-copy-btn');
+  const nextBtn = document.getElementById('onboard-next-btn');
+  if (ok && btn) {
+    btn.textContent = '已复制 // COPIED ✓';
+    btn.classList.add('copied');
+    if (nextBtn) nextBtn.disabled = false;
+    showToast('专属接入引导已复制到剪贴板');
+  }
+}
+
+function nextOnboardingStep() {
+  if (onboardCurrentStep < 3) {
+    onboardCurrentStep++;
+    renderOnboardingStep();
+  }
+}
+
+function prevOnboardingStep() {
+  if (onboardCurrentStep > 1) {
+    onboardCurrentStep--;
+    renderOnboardingStep();
+  }
+}
+
+async function startOnboardStatusCheck() {
+  if (onboardStatusCheckTimer) {
+    clearInterval(onboardStatusCheckTimer);
+  }
+  // 立即检测一次
+  checkOnboardAgentStatus();
+  // 每3秒检测一次
+  onboardStatusCheckTimer = setInterval(checkOnboardAgentStatus, 3000);
+}
+
+async function checkOnboardAgentStatus() {
+  try {
+    const resp = await fetch('/api/agents/status');
+    const data = await resp.json();
+    const agents = data.agents || [];
+    const listEl = document.getElementById('onboard-agent-list');
+    if (!listEl) return;
+
+    if (agents.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;color:var(--dim-2);padding:20px;">暂无 Agent</div>';
+      return;
+    }
+
+    let html = '';
+    let anyOnline = false;
+    for (const agent of agents) {
+      const isOnline = agent.connected === true;
+      if (isOnline) anyOnline = true;
+      const entryType = agent.entry ? agent.entry.type : '未注册';
+      html += `
+        <div class="onboard-agent-row">
+          <span class="onboard-agent-name">${agent.name || agent.id}</span>
+          <span class="onboard-agent-status ${isOnline ? 'online' : 'offline'}">
+            ${isOnline ? '● 已接入' : '○ 等待中'}
+          </span>
+        </div>
+      `;
+    }
+    listEl.innerHTML = html;
+
+    // 如果有Agent在线，显示提示
+    if (anyOnline) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'text-align:center;color:var(--green);font-size:11px;margin-top:8px;font-family:var(--mono);';
+      hint.textContent = '✓ 检测到 Agent 已接入！';
+    }
+  } catch (e) {
+    console.error('检测Agent状态失败:', e);
   }
 }
 

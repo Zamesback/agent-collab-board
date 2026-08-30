@@ -83,10 +83,11 @@ def get_project_path(project_name):
     return None
 
 
-def _build_onboarding_md(project_name, project_title, description, workspace, agents):
+def _build_onboarding_md(project_name, project_title, description, workspace, agents, agent_id=None):
     """T9.1: 生成 Agent 接入引导文档（AGENT_ONBOARDING.md）
 
     供新接入的 AI Agent 阅读：项目信息、看板路径、协作规则、触发方式。
+    如果指定 agent_id，则生成专属接入引导，开头明确身份信息。
     """
     board_path = os.path.join(PROJECTS_ROOT, project_name, "collab_board.json")
     url = f"http://localhost:8766/collab_board_nothing.html?project={project_name}"
@@ -97,9 +98,33 @@ def _build_onboarding_md(project_name, project_title, description, workspace, ag
         else:
             agent_lines_list.append(f"- **{a}**（`{a}`）")
     agent_lines = "\n".join(agent_lines_list)
+
+    # 如果指定了agent_id，生成专属身份头部
+    identity_header = ""
+    if agent_id:
+        target_agent = None
+        for a in agents:
+            if isinstance(a, dict) and a.get("id") == agent_id:
+                target_agent = a
+                break
+        if target_agent:
+            agent_name = target_agent.get("name", agent_id)
+            agent_role = target_agent.get("role", "")
+            identity_header = f"""## 你的身份
+
+你是 **{agent_name}**，你的 Agent ID 是 `{agent_id}`。
+你的角色是：{agent_role or '（未指定）'}
+
+请在注册时使用这个 ID：`{agent_id}`
+在看板中发消息时，sender 字段请填写：`{agent_id}`
+
+---
+
+"""
+
     return f"""# {project_title} — Agent 接入引导
 
-本文件是「{project_title}」的 Agent 协作入口。接入本项目的 AI Agent 请先完整阅读本文件。
+{identity_header}本文件是「{project_title}」的 Agent 协作入口。接入本项目的 AI Agent 请先完整阅读本文件。
 
 ## 项目信息
 - 项目：{project_title}
@@ -126,6 +151,22 @@ def _build_onboarding_md(project_name, project_title, description, workspace, ag
 - 混合模式：人类复制触发指令给你（手动）
 - API 模式：配置 LLM API 后 `@` 自动触发
 - 定时模式：定时轮询扫描未处理 `@` 消息
+- Webhook 推送：注册 HTTP webhook 后，`@` 消息实时推送给你
+
+## 注册方式
+调用注册 API 接入看板：
+```
+POST /api/agents/register?project={project_name}
+Content-Type: application/json
+
+{{
+  "agent_id": "{agent_id or '你的ID'}",
+  "entry": {{
+    "type": "http",
+    "target": "你的webhook地址"
+  }}
+}}
+```
 
 ## 版本管理约定
 - 遵守项目 CONTRIBUTING.md 的版本管理、分支、提交规范
@@ -462,6 +503,113 @@ def register_agent(project, agent_id, entry):
         print(f"[T8.1] 同步 agents 到看板失败: {e}")
 
     return True, f"Agent {agent_id} 注册成功"
+
+
+# ===== Agent @消息推送与接通确认（T8.2）=====
+def push_message_to_agent(agent, msg, project=None):
+    """T8.2: 推送@消息给已注册HTTP webhook的Agent
+
+    Args:
+        agent: Agent配置对象（含entry字段）
+        msg: 消息对象
+        project: 项目名（可选）
+
+    Returns:
+        (success, message)
+    """
+    entry = agent.get("entry")
+    if not entry or entry.get("type") != "http":
+        return False, "Agent未注册HTTP webhook"
+
+    webhook_url = entry.get("target", "")
+    if not webhook_url:
+        return False, "webhook URL为空"
+
+    # 构建推送payload
+    payload = {
+        "event": "message.mention",
+        "project": project or "",
+        "agent_id": agent.get("id", ""),
+        "agent_name": agent.get("name", ""),
+        "message": {
+            "id": msg.get("id"),
+            "sender": msg.get("sender"),
+            "content": msg.get("content"),
+            "timestamp": msg.get("timestamp"),
+            "type": msg.get("type", "text")
+        },
+        "board_path": os.path.join(PROJECTS_ROOT, project, "collab_board.json") if project else BOARD_FILE,
+        "reply_api": f"/api/messages"
+    }
+
+    try:
+        import urllib.request
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            webhook_url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                # 推送成功，更新last_seen（接通确认）
+                _update_agent_last_seen(agent.get("id"), project)
+                return True, "推送成功"
+            else:
+                return False, f"推送失败，HTTP状态: {resp.status}"
+    except Exception as e:
+        # 推送失败，标记Agent为offline
+        _mark_agent_offline(agent.get("id"), project)
+        return False, f"推送异常: {str(e)}"
+
+
+def _update_agent_last_seen(agent_id, project=None):
+    """更新Agent的last_seen时间（接通确认）"""
+    try:
+        config = load_config(project)
+        now = time.strftime("%Y-%m-%dT%H:%M:%S+08:00")
+        for agent in config.get("agents", []):
+            if agent.get("id") == agent_id:
+                agent["last_seen"] = now
+                agent["connected"] = True
+                break
+        save_config(config, project)
+        # 同步到看板
+        data = load_board(project)
+        data["agents"] = config.get("agents", [])
+        save_board(data, project)
+    except Exception as e:
+        print(f"[T8.2] 更新last_seen失败: {e}")
+
+
+def _mark_agent_offline(agent_id, project=None):
+    """推送失败时标记Agent为offline"""
+    try:
+        config = load_config(project)
+        for agent in config.get("agents", []):
+            if agent.get("id") == agent_id:
+                agent["connected"] = False
+                break
+        save_config(config, project)
+        data = load_board(project)
+        data["agents"] = config.get("agents", [])
+        save_board(data, project)
+    except Exception as e:
+        print(f"[T8.2] 标记offline失败: {e}")
+
+
+def check_agent_online(agent, timeout_seconds=300):
+    """检查Agent是否在线（基于last_seen，默认5分钟超时）"""
+    last_seen = agent.get("last_seen")
+    if not last_seen:
+        return False
+    try:
+        last_time = time.strptime(last_seen, "%Y-%m-%dT%H:%M:%S+08:00")
+        elapsed = time.time() - time.mktime(last_time)
+        return elapsed < timeout_seconds
+    except Exception:
+        return False
 
 
 # ===== api_key 加密存储（T2.6）=====
@@ -914,30 +1062,13 @@ def detect_mentions(content, agents):
     return mentioned
 
 
-def trigger_agent_if_mentioned(msg, board_data):
-    """T3.2: 检测消息中的@提及，如果auto_trigger开启则异步触发对应Agent"""
+def trigger_agent_if_mentioned(msg, board_data, project=None):
+    """T3.2: 检测消息中的@提及，如果auto_trigger开启则异步触发对应Agent
+    T8.2: 如果Agent注册了http webhook，独立推送@消息（不依赖API模式）
+    """
     try:
-        config = load_config()
+        config = load_config(project)
         api_config = config.get("api_config", {})
-
-        # 检查是否启用自动触发
-        if not api_config.get("enabled", False) or not api_config.get("auto_trigger", False):
-            return
-
-        # 检查API key是否配置
-        if not api_config.get("api_key", ""):
-            return
-
-        # T3.4: 防循环检查
-        max_depth = api_config.get("max_chain_length", 3)
-        allowed, reason = check_and_update_chain(msg, max_depth)
-        if not allowed:
-            # 如果是因为深度超限，发系统消息提示
-            if "深度超过限制" in reason:
-                _append_system_message(
-                    f"[防循环] {reason}。请用户介入确认后继续。"
-                )
-            return
 
         # 检测@提及
         agents = board_data.get("agents", [])
@@ -957,7 +1088,42 @@ def trigger_agent_if_mentioned(msg, board_data):
             # 异步保存到文件（不阻塞）
             threading.Thread(target=save_processed_msg_ids, args=(schedule_manager._processed_msg_ids,), daemon=True).start()
 
-        # 异步触发每个被@的Agent
+        # T8.2: Webhook推送 —— 独立于API模式，只要Agent注册了http webhook就推送
+        for agent_id in mentioned:
+            agent = next((a for a in agents if a.get("id") == agent_id), None)
+            if not agent:
+                continue
+            entry = agent.get("entry")
+            if entry and entry.get("type") == "http" and entry.get("target"):
+                # 异步推送，不阻塞HTTP响应
+                t = threading.Thread(
+                    target=push_message_to_agent,
+                    args=(agent, msg, project),
+                    daemon=True
+                )
+                t.start()
+
+        # ===== 以下为API模式自动触发（需要API配置）=====
+        # 检查是否启用自动触发
+        if not api_config.get("enabled", False) or not api_config.get("auto_trigger", False):
+            return
+
+        # 检查API key是否配置
+        if not api_config.get("api_key", ""):
+            return
+
+        # T3.4: 防循环检查
+        max_depth = api_config.get("max_chain_length", 3)
+        allowed, reason = check_and_update_chain(msg, max_depth)
+        if not allowed:
+            # 如果是因为深度超限，发系统消息提示
+            if "深度超过限制" in reason:
+                _append_system_message(
+                    f"[防循环] {reason}。请用户介入确认后继续。"
+                )
+            return
+
+        # 异步触发每个被@的Agent（API模式）
         for agent_id in mentioned:
             agent = next((a for a in agents if a.get("id") == agent_id), None)
             if not agent:
@@ -1445,23 +1611,28 @@ class CollabHandler(SimpleHTTPRequestHandler):
         # API: Agent 接入引导文本（T9.2）
         if parsed.path == "/api/onboarding":
             config = load_config(project)
+            # 支持agent_id参数，生成专属接入引导
+            params = parse_qs(parsed.query)
+            agent_id = params.get("agent_id", [None])[0]
             onboarding_content = ""
             if project:
                 project_path = get_project_path(project)
                 onboarding_file = os.path.join(project_path, "AGENT_ONBOARDING.md")
-                if os.path.exists(onboarding_file):
+                if os.path.exists(onboarding_file) and not agent_id:
+                    # 通用引导：读取文件
                     with open(onboarding_file, "r", encoding="utf-8") as f:
                         onboarding_content = f.read()
                 else:
-                    # 动态生成（旧项目没有引导文件时兜底）
+                    # 专属引导（指定agent_id）或旧项目没有引导文件时，动态生成
                     onboarding_content = _build_onboarding_md(
                         project,
                         config.get("project_name", project),
                         config.get("meta", {}).get("project_desc", ""),
                         config.get("workspace", ""),
-                        config.get("agents", [])
+                        config.get("agents", []),
+                        agent_id=agent_id
                     )
-            self._send_json({"ok": True, "project": project, "content": onboarding_content})
+            self._send_json({"ok": True, "project": project, "agent_id": agent_id, "content": onboarding_content})
             return
 
         # API: 获取API状态和统计（T2.4）
@@ -1700,7 +1871,7 @@ class CollabHandler(SimpleHTTPRequestHandler):
 
         # T3.2: 消息写入钩子 — 检测@提及，异步触发对应Agent
         if new_msg.get("type") != "system":
-            trigger_agent_if_mentioned(new_msg, data)
+            trigger_agent_if_mentioned(new_msg, data, project)
 
         self._send_json({"ok": True, "message_id": new_id})
 
@@ -1912,10 +2083,13 @@ def main():
         except ValueError:
             print(f"无效端口: {sys.argv[1]}，使用默认 {DEFAULT_PORT}")
 
-    # 检查数据文件
+    # 检查数据文件（多项目模式下不强制要求默认项目存在）
     if not os.path.exists(BOARD_FILE):
-        print(f"错误：找不到数据文件 {BOARD_FILE}")
-        sys.exit(1)
+        print(f"警告：找不到默认数据文件 {BOARD_FILE}")
+        print("提示：多项目模式下，请通过 ?project=xxx 参数指定项目，或在项目管理页面创建新项目。")
+        # 不退出，继续启动（多项目模式）
+    else:
+        print(f"数据文件: {BOARD_FILE}")
 
     server = HTTPServer(("0.0.0.0", port), CollabHandler)
     print(f"\n{'='*60}")
