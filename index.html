@@ -264,6 +264,157 @@
     border-radius: 2px;
   }
 
+  /* ===== 删除按钮 ===== */
+  .delete-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--dim-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    z-index: 2;
+    opacity: 0;
+  }
+  .project-card:hover .delete-btn {
+    opacity: 1;
+  }
+  .delete-btn:hover {
+    background: rgba(255,54,33,.12);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* ===== 删除确认弹窗 ===== */
+  .delete-modal .modal {
+    max-width: 480px;
+  }
+  .delete-modal .modal-header {
+    border-bottom: 1px solid var(--line-2);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .delete-modal .modal-header h2 {
+    color: var(--red);
+    font-family: var(--pixel);
+    font-size: 16px;
+  }
+  .delete-warning {
+    background: rgba(255,54,33,.08);
+    border: 1px solid rgba(255,54,33,.3);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  .delete-warning strong {
+    color: var(--red);
+  }
+  .scope-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .scope-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--panel);
+  }
+  .scope-option:hover {
+    border-color: var(--red);
+    background: var(--panel-2);
+  }
+  .scope-option.selected {
+    border-color: var(--red);
+    background: rgba(255,54,33,.08);
+  }
+  .scope-option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--red);
+  }
+  .scope-option .scope-title {
+    font-family: var(--pixel);
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .scope-option .scope-desc {
+    font-size: 12px;
+    color: var(--dim-2);
+    line-height: 1.5;
+  }
+  .confirm-input-group {
+    margin-bottom: 20px;
+  }
+  .confirm-input-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 8px;
+    font-family: var(--mono);
+  }
+  .confirm-input-group input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--line-2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .confirm-input-group input:focus {
+    border-color: var(--red);
+  }
+  .confirm-input-group input.mismatch {
+    border-color: var(--red);
+    background: rgba(255,54,33,.08);
+  }
+  .delete-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .btn-danger {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-family: var(--pixel);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: #e02e1c;
+    transform: translateY(-1px);
+  }
+  .btn-danger:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   /* ===== 创建项目卡片 ===== */
   .create-card {
     background: transparent;
@@ -617,6 +768,48 @@
   </div>
 </div>
 
+<!-- 删除项目确认弹窗 -->
+<div class="modal-overlay delete-modal" id="deleteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚠ 删除项目</h2>
+      <button class="modal-close" onclick="closeDeleteModal()">×</button>
+    </div>
+
+    <div class="delete-warning">
+      <strong>警告：</strong>此操作不可撤销！删除前请确认已备份重要数据。
+      <br/>当前项目：<span id="deleteProjectName" style="color:var(--text);font-family:var(--mono)"></span>
+    </div>
+
+    <div class="scope-options">
+      <label class="scope-option selected" onclick="selectScope('data_only')">
+        <input type="radio" name="deleteScope" value="data_only" checked />
+        <div>
+          <div class="scope-title">只删数据</div>
+          <div class="scope-desc">删除看板、配置、日志等数据文件，保留空项目文件夹，可重新配置新项目</div>
+        </div>
+      </label>
+      <label class="scope-option" onclick="selectScope('all')">
+        <input type="radio" name="deleteScope" value="all" />
+        <div>
+          <div class="scope-title">删除一切</div>
+          <div class="scope-desc">彻底删除整个项目文件夹及所有内容，无法恢复</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="confirm-input-group" id="confirmInputGroup" style="display:none;">
+      <label>请输入项目标识 <span style="color:var(--red)" id="confirmProjectId"></span> 以确认删除：</label>
+      <input type="text" id="confirmInput" placeholder="输入项目标识..." oninput="checkConfirmMatch()" />
+    </div>
+
+    <div class="delete-modal-actions">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">取消</button>
+      <button class="btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()" disabled>确认删除</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let projects = [];
 
@@ -654,6 +847,7 @@
         card.className = 'project-card';
         card.onclick = () => openProject(p.name);
         card.innerHTML = `
+          <button class="delete-btn" title="删除项目" onclick="event.stopPropagation(); showDeleteModal('${p.name}', '${p.project_name || p.name}')">✕</button>
           <div class="card-top">
             <div class="project-name">${p.project_name || p.name}</div>
             <div class="project-id">${p.name}</div>
@@ -745,7 +939,100 @@
 
   // ESC 关闭弹窗
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+      closeModal();
+      closeDeleteModal();
+    }
+  });
+
+  // ===== 删除项目功能 =====
+  let currentDeleteProjectId = '';
+  let currentDeleteScope = 'data_only';
+
+  function showDeleteModal(projectId, projectName) {
+    currentDeleteProjectId = projectId;
+    currentDeleteScope = 'data_only';
+    document.getElementById('deleteProjectName').textContent = projectName + ' (' + projectId + ')';
+    document.getElementById('confirmProjectId').textContent = projectId;
+    document.getElementById('confirmInput').value = '';
+    document.getElementById('confirmInput').classList.remove('mismatch');
+    document.getElementById('confirmInputGroup').style.display = 'none';
+    document.getElementById('confirmDeleteBtn').disabled = false;
+    // 重置单选框
+    document.querySelectorAll('input[name="deleteScope"]').forEach(r => r.checked = (r.value === 'data_only'));
+    document.querySelectorAll('.scope-option').forEach(o => o.classList.toggle('selected', o.querySelector('input').value === 'data_only'));
+    document.getElementById('deleteModal').classList.add('active');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+  }
+
+  function selectScope(scope) {
+    currentDeleteScope = scope;
+    document.querySelectorAll('.scope-option').forEach(o => {
+      o.classList.toggle('selected', o.querySelector('input').value === scope);
+    });
+    document.querySelectorAll('input[name="deleteScope"]').forEach(r => r.checked = (r.value === scope));
+
+    // 删除一切需要输入确认
+    const confirmGroup = document.getElementById('confirmInputGroup');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    if (scope === 'all') {
+      confirmGroup.style.display = 'block';
+      confirmBtn.disabled = true;
+    } else {
+      confirmGroup.style.display = 'none';
+      confirmBtn.disabled = false;
+    }
+  }
+
+  function checkConfirmMatch() {
+    const input = document.getElementById('confirmInput');
+    const btn = document.getElementById('confirmDeleteBtn');
+    if (input.value === currentDeleteProjectId) {
+      input.classList.remove('mismatch');
+      btn.disabled = false;
+    } else {
+      input.classList.add('mismatch');
+      btn.disabled = true;
+    }
+  }
+
+  async function confirmDelete() {
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = '删除中...';
+
+    try {
+      const resp = await fetch('/api/project', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_name: currentDeleteProjectId,
+          scope: currentDeleteScope,
+          confirm_name: currentDeleteScope === 'all' ? document.getElementById('confirmInput').value : ''
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        alert('删除成功：' + data.message);
+        closeDeleteModal();
+        loadProjects();
+      } else {
+        alert('删除失败：' + (data.error || '未知错误'));
+      }
+    } catch (e) {
+      alert('删除失败：' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '确认删除';
+    }
+  }
+
+  // 点击遮罩关闭删除弹窗
+  document.getElementById('deleteModal').addEventListener('click', (e) => {
+    if (e.target.id === 'deleteModal') closeDeleteModal();
   });
 
   // 加载项目列表

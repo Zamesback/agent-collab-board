@@ -190,6 +190,72 @@ def create_project(project_name, agents=None, workspace="", handoff="", project_
     return True, "项目创建成功", project_path
 
 
+def delete_project(project_name, scope="data_only"):
+    """删除项目
+
+    Args:
+        project_name: 项目文件夹名
+        scope: 删除范围
+            - "data_only": 只删除数据文件（看板/配置/日志/锁），保留空文件夹
+            - "all": 删除整个项目文件夹
+
+    Returns:
+        (success, message, deleted_files)
+    """
+    project_path = get_project_path(project_name)
+    if not project_path:
+        return False, f"项目 '{project_name}' 不存在", []
+
+    deleted_files = []
+
+    if scope == "data_only":
+        # 只删除数据文件，保留文件夹
+        data_files = [
+            "collab_board.json",
+            "project_config.json",
+            "processed_msg_ids.json",
+            "api_calls.log",
+        ]
+        for filename in data_files:
+            filepath = os.path.join(project_path, filename)
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                    deleted_files.append(filename)
+                except Exception as e:
+                    return False, f"删除 {filename} 失败: {str(e)}", deleted_files
+
+        # 删除所有 .lock 文件
+        for filename in os.listdir(project_path):
+            if filename.endswith(".lock"):
+                filepath = os.path.join(project_path, filename)
+                try:
+                    os.remove(filepath)
+                    deleted_files.append(filename)
+                except Exception:
+                    pass
+
+        return True, f"已删除 {len(deleted_files)} 个数据文件，项目文件夹保留", deleted_files
+
+    elif scope == "all":
+        # 删除整个项目文件夹
+        try:
+            # 先记录删除的文件
+            for root, dirs, files in os.walk(project_path):
+                for f in files:
+                    deleted_files.append(os.path.relpath(os.path.join(root, f), project_path))
+
+            # 删除整个文件夹
+            import shutil
+            shutil.rmtree(project_path)
+            return True, f"项目 '{project_name}' 已完全删除（{len(deleted_files)} 个文件）", deleted_files
+        except Exception as e:
+            return False, f"删除项目文件夹失败: {str(e)}", deleted_files
+
+    else:
+        return False, f"未知的删除范围: {scope}", []
+
+
 def get_project_files(project_name):
     """获取项目的数据文件路径，如果项目不存在返回默认路径（向后兼容）"""
     project_path = get_project_path(project_name)
@@ -1323,6 +1389,59 @@ class CollabHandler(SimpleHTTPRequestHandler):
             return
 
         self._send_error(404, "Not Found")
+
+    def do_DELETE(self):
+        """处理 DELETE 请求"""
+        parsed = urlparse(self.path)
+
+        # API: 删除项目
+        if parsed.path == "/api/project":
+            self._handle_delete_project()
+            return
+
+        self._send_error(404, "Not Found")
+
+    def _handle_delete_project(self):
+        """删除项目"""
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else "{}"
+            req = json.loads(body) if body else {}
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+
+        project_name = req.get("project_name", "").strip()
+        scope = req.get("scope", "data_only")  # data_only / all
+        confirm_name = req.get("confirm_name", "").strip()
+
+        # 验证
+        if not project_name:
+            self._send_json({"ok": False, "error": "项目名不能为空"})
+            return
+
+        if scope not in ("data_only", "all"):
+            self._send_json({"ok": False, "error": "scope 必须是 data_only 或 all"})
+            return
+
+        # 安全确认：删除整个项目需要输入项目名确认
+        if scope == "all" and confirm_name != project_name:
+            self._send_json({"ok": False, "error": "删除整个项目需要输入项目名确认"})
+            return
+
+        # 执行删除
+        success, message, deleted_files = delete_project(project_name, scope)
+
+        if success:
+            self._send_json({
+                "ok": True,
+                "message": message,
+                "project_name": project_name,
+                "scope": scope,
+                "deleted_files": deleted_files
+            })
+        else:
+            self._send_json({"ok": False, "error": message})
 
     def _handle_create_project(self):
         """创建新项目"""
