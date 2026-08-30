@@ -1953,6 +1953,7 @@ let onboardGuideContent = '';
 let onboardStatusCheckTimer = null;
 let onboardAgentsList = [];
 let onboardSelectedAgent = null;
+let onboardEventListenerAdded = false;
 
 async function openOnboardingGuide() {
   onboardCurrentStep = 1;
@@ -1968,6 +1969,24 @@ async function openOnboardingGuide() {
   }
   document.getElementById('onboard-overlay').classList.add('show');
   renderOnboardingStep();
+
+  // 添加事件委托监听器（只添加一次）
+  if (!onboardEventListenerAdded) {
+    const contentEl = document.getElementById('onboard-content');
+    if (contentEl) {
+      contentEl.addEventListener('click', function(e) {
+        // 事件委托：点击Agent选项
+        const option = e.target.closest('.onboard-agent-option');
+        if (option) {
+          const agentId = option.getAttribute('data-agent-id');
+          if (agentId) {
+            selectOnboardingAgent(agentId);
+          }
+        }
+      });
+      onboardEventListenerAdded = true;
+    }
+  }
 }
 
 function closeOnboardingGuide(event) {
@@ -1994,7 +2013,7 @@ function renderOnboardingStep() {
   if (onboardCurrentStep === 1) {
     // 第一步：选择Agent + 复制专属接入引导
     const agentOptions = onboardAgentsList.map(a => `
-      <div class="onboard-agent-option ${onboardSelectedAgent === a.id ? 'selected' : ''}" onclick="selectOnboardingAgent('${a.id}')">
+      <div class="onboard-agent-option ${onboardSelectedAgent === a.id ? 'selected' : ''}" data-agent-id="${escapeHtmlSafe(a.id)}">
         <div class="onboard-agent-option-info">
           <span class="onboard-agent-option-name">${escapeHtmlSafe(a.name || a.id)}</span>
           <span class="onboard-agent-option-role">${escapeHtmlSafe(a.role || '未指定角色')}</span>
