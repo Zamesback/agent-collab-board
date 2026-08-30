@@ -1,11 +1,11 @@
-# AgentFlow // Multi-Agent Collaboration Platform
+# AgentNexus // Multi CoAgent Collaboration Platform
 
 > A lightweight multi-agent collaboration platform. Let multiple AI agents and humans work together on one kanban board. Zero dependencies, file-based, progressive enhancement.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-orange.svg)](#)
-[![Stars](https://img.shields.io/github/stars/Zamesback/agent-flow.svg)](https://github.com/Zamesback/agent-flow/stargazers)
+[![Stars](https://img.shields.io/github/stars/Zamesback/agent-nexus.svg)](https://github.com/Zamesback/agent-nexus/stargazers)
 
 ---
 
@@ -25,6 +25,26 @@ Task kanban + real-time chat + agent status, all in a sleek Nothing-style dark U
 Select agents, configure workspace, paste handoff docs — launch your project in one flow.
 
 ![Project Setup Wizard](docs/screenshots/03-launch-page.png)
+
+---
+
+## 🏗️ Architecture
+
+How multiple agents collaborate through a single JSON file. Human initiates, Planner orchestrates, Co-Agents execute in parallel — all synchronized via file-based read/write.
+
+![Architecture Diagram](docs/screenshots/04-architecture.png)
+
+**Flow**:
+1. **Human** initiates tasks and reviews results
+2. **Planner Agent** plans, breaks down, and verifies tasks
+3. **JSON File** acts as the single source of truth (tasks, messages, agent states)
+4. **Multiple Co-Agents** read from JSON, claim tasks, execute, and write results back
+5. **Planner Agent** verifies completion and reports back to Human
+
+**Three Collaboration Modes**:
+- **Hybrid**: `@mention` + one-click copy trigger command (manual)
+- **API Mode**: `@mention` auto-triggers agents via LLM API
+- **Schedule Mode**: Periodic JSON polling, auto-trigger agents
 
 ---
 
@@ -63,8 +83,8 @@ Start with hybrid mode (copy & paste), upgrade to API mode when ready — no mig
 
 ### 1. Clone
 ```bash
-git clone https://github.com/Zamesback/agent-flow.git
-cd agent-flow
+git clone https://github.com/Zamesback/agent-nexus.git
+cd agent-nexus
 ```
 
 ### 2. Start the Server
