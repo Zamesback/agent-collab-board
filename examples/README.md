@@ -1,38 +1,38 @@
-# 示例项目
+# Example Project
 
-这是一个示例项目，展示多Agent协同看板的基本用法。
+This is an example project demonstrating basic usage of the multi-agent collaboration board.
 
-## 快速使用
+## Quick Start
 
-1. 把 `sample-project` 文件夹复制到你的项目根目录（默认 `~/agent-collab-projects/`）
-2. 启动服务器：`python3 server.py`
-3. 打开浏览器：http://localhost:8766
-4. 在项目列表中点击 "sample-project" 进入看板
+1. Copy the `sample-project` folder to your project root directory (default `~/agent-collab-projects/`)
+2. Start the server: `python3 server.py`
+3. Open browser: http://localhost:8766
+4. Click "sample-project" in the project list to enter the board
 
-## 示例项目包含
+## Example Project Contains
 
-- `collab_board.json` — 示例看板数据（4个任务、3条消息、3个Agent）
-- `project_config.json` — 示例配置（API配置、触发模板）
+- `collab_board.json` — Example board data (4 tasks, 3 messages, 3 agents)
+- `project_config.json` — Example configuration (API config, trigger templates)
 
-## 任务状态说明
+## Task Status Explanation
 
-| 任务 | 状态 | 负责人 | 说明 |
+| Task | Status | Assignee | Description |
 |---|---|---|---|
-| T1 明确项目目标 | ✅ 已完成 | 用户 | 示例已完成任务 |
-| T2 制定项目计划 | 🔄 进行中 | 规划Agent | 示例进行中任务 |
-| T3 实现核心功能 | ⏳ 待办 | 未认领 | 示例待办任务 |
-| T4 测试和验收 | ⏳ 待办 | 未认领 | 示例待办任务 |
+| T1 Define Project Goals | ✅ Done | User | Example completed task |
+| T2 Create Project Plan | 🔄 In Progress | Planner Agent | Example in-progress task |
+| T3 Implement Core Features | ⏳ Todo | Unassigned | Example todo task |
+| T4 Testing & Acceptance | ⏳ Todo | Unassigned | Example todo task |
 
-## 体验协同流程
+## Experience Collaboration Flow
 
-1. 在聊天区发送 `@规划Agent 任务拆解完了吗？`
-2. 点击消息旁的「复制指令」按钮
-3. 把复制的指令粘贴到规划Agent的对话窗口
-4. 规划Agent处理后，把结果写回看板
-5. 刷新看板页面，就能看到更新
+1. Send `@Planner Agent Is the task breakdown done?` in the chat area
+2. Click the "Copy Command" button next to the message
+3. Paste the copied command into the Planner Agent's chat window
+4. After the Planner Agent processes, write the results back to the board
+5. Refresh the board page to see the updates
 
-## 自定义
+## Customization
 
-- 修改 `collab_board.json` 里的任务和消息
-- 修改 `project_config.json` 里的Agent配置和触发模板
-- 在看板页面直接操作（添加任务、发送消息、认领任务）
+- Modify tasks and messages in `collab_board.json`
+- Modify agent configuration and trigger templates in `project_config.json`
+- Operate directly on the board page (add tasks, send messages, claim tasks)

@@ -1,166 +1,178 @@
 # Changelog
 
-本文件记录 AgentNexus 的版本变更。版本号遵循语义化版本（SemVer）：`主版本.次版本.补丁`。
+This file records version changes for AgentNexus. Version numbers follow Semantic Versioning (SemVer): `MAJOR.MINOR.PATCH`.
 
 ## [v2.3.0] - 2026-08-30
 
-### 新增功能
+### New Features
 
-- **Agent傻瓜式接入**：三步引导面板，让新Agent接入变得简单直观
-  - 第一步：选择要接入的Agent（从项目Agent列表中选择）
-  - 第二步：复制专属接入引导，粘贴给AI Agent
-  - 第三步：等待接入，自动检测Agent状态（每3秒刷新）
+- **Foolproof Agent Onboarding**: Three-step guide panel makes onboarding new agents simple and intuitive
+  - Step 1: Select the agent to onboard (from project agent list)
+  - Step 2: Copy personalized onboarding guide, paste to AI agent
+  - Step 3: Wait for connection, auto-detect agent status (refreshes every 3 seconds)
 
-- **专属接入引导**：选择Agent后生成带身份信息的引导文档
-  - 文档开头明确「你的身份」：你是谁、ID是什么、角色是什么
-  - 包含注册和发消息时的ID使用说明
-  - Agent一打开文档就知道自己的角色，无需用户手动补充
+- **Personalized Onboarding Guide**: Generate identity-aware guide after selecting an agent
+  - Document header clearly states "Your Identity": who you are, your ID, your role
+  - Includes ID usage instructions for registration and messaging
+  - Agent knows its role immediately upon opening the document, no manual补充 needed
 
-- **@消息Webhook推送**：Agent注册HTTP webhook后，@消息实时推送
-  - 独立于API模式：只要Agent注册了http webhook就推送，不需要配置LLM API
-  - 推送内容：事件类型、项目名、Agent信息、消息详情、看板路径、回复API
-  - 推送成功更新last_seen（接通确认），推送失败标记offline
+- **@Message Webhook Push**: Real-time @message push after agent registers HTTP webhook
+  - Independent of API mode: pushes as long as agent registered http webhook, no LLM API config needed
+  - Push content: event type, project name, agent info, message details, board path, reply API
+  - Successful push updates last_seen (connection confirmation), failed push marks offline
 
-- **Agent接入脚本示例**：`examples/agent_example.py`（零依赖，仅Python标准库）
-  - `AgentClient`类：注册、心跳、发消息、认领任务
-  - `WebhookHandler`：接收@消息推送并自动回复
-  - CLI参数：`--agent-id`, `--agent-name`, `--board-url`, `--project`, `--port`
-  - 启动后自动注册、发送上线消息、每30秒心跳保活
+- **Agent Onboarding Script Example**: `examples/agent_example.py` (zero dependencies, Python standard library only)
+  - `AgentClient` class: register, heartbeat, send message, claim task
+  - `WebhookHandler`: receive @message push and auto-reply
+  - CLI arguments: `--agent-id`, `--agent-name`, `--board-url`, `--project`, `--port`
+  - Auto-register on startup, send online message, heartbeat every 30 seconds
 
-- **Agent注册API**：`POST /api/agents/register`（规划Agent完成，T8.1）
-  - 注册Agent入口，支持`http`（webhook）和`session`（手动）两种类型
-  - 注册后标记`connected=True`，记录`registered_at`和`last_seen`
-  - 同步agents列表到看板，保持一致
+- **Agent Registration API**: `POST /api/agents/register` (completed by Planner Agent, T8.1)
+  - Register agent entry, supports `http` (webhook) and `session` (manual) types
+  - Marks `connected=True` after registration, records `registered_at` and `last_seen`
+  - Syncs agents list to board for consistency
 
-- **Agent实时状态显示**：`GET /api/agents/status`（规划Agent完成，T8.3）
-  - 返回每个Agent的：ID、名称、角色、在线状态、接入方式、注册时间、最后活跃时间
-  - API设置弹窗中显示Agent状态列表（ONLINE/OFFLINE徽章）
+- **Agent Real-time Status Display**: `GET /api/agents/status` (completed by Planner Agent, T8.3)
+  - Returns for each agent: ID, name, role, online status, entry type, registration time, last active time
+  - Agent status list in API settings modal (ONLINE/OFFLINE badges)
 
-### 技术实现
+### Technical Implementation
 
-- **后端**：
-  - `push_message_to_agent()`：推送@消息给已注册HTTP webhook的Agent
-  - `_update_agent_last_seen()`：推送成功更新last_seen（接通确认）
-  - `_mark_agent_offline()`：推送失败标记Agent为offline
-  - `check_agent_online()`：基于last_seen检查在线状态（默认5分钟超时）
-  - `_build_onboarding_md()`：支持`agent_id`参数，生成专属接入引导
-  - `/api/onboarding`：支持`agent_id` query参数，带参数时动态生成专属引导
+- **Backend**:
+  - `push_message_to_agent()`: push @message to agents with registered HTTP webhook
+  - `_update_agent_last_seen()`: update last_seen on successful push (connection confirmation)
+  - `_mark_agent_offline()`: mark agent offline on push failure
+  - `check_agent_online()`: check online status based on last_seen (default 5-minute timeout)
+  - `_build_onboarding_md()`: supports `agent_id` parameter, generates personalized onboarding guide
+  - `/api/onboarding`: supports `agent_id` query parameter, dynamically generates personalized guide when parameter present
 
-- **前端**：
-  - 三步引导面板（Nothing风格：深色背景、红色强调、像素字体）
-  - Agent选择器：列表展示名称+角色，点击选择（高亮+勾选）
-  - 步骤指示器：active/done状态，进度可视化
-  - 自动状态检测：第三步每3秒调用`/api/agents/status`刷新
+- **Frontend**:
+  - Three-step guide panel (Nothing style: dark background, red accent, pixel font)
+  - Agent selector: list shows name + role, click to select (highlight + checkmark)
+  - Step indicator: active/done states, progress visualization
+  - Auto status detection: step 3 calls `/api/agents/status` every 3 seconds to refresh
 
-- **重构**：
-  - `trigger_agent_if_mentioned()`：webhook推送移到API模式检查之前，独立执行
-  - 服务器启动：多项目模式下不强制要求默认项目数据文件存在，只警告不退出
+- **Refactoring**:
+  - `trigger_agent_if_mentioned()`: webhook push moved before API mode check, executes independently
+  - Server startup: multi-project mode no longer requires default project data file to exist, only warns without exiting
 
-### 测试验证
+### Testing & Verification
 
-- **端到端测试通过**：注册→推送→回复全流程正常
-  - Agent注册成功（connected=True, entry正确, last_seen有值）
-  - @消息实时推送到Agent webhook
-  - Agent接收后自动回复，回复出现在看板消息列表中
+- **End-to-end test passed**: register → push → reply full flow normal
+  - Agent registration successful (connected=True, entry correct, last_seen has value)
+  - @message real-time pushed to agent webhook
+  - Agent auto-replies after receiving, reply appears in board message list
 
-- **专属引导测试通过**：
-  - planner专属引导：开头明确"你是规划Agent，ID是planner，角色是任务拆解/方案评审..."
-  - builder专属引导：开头明确"你是执行Agent，ID是builder，角色是前端开发/后端开发..."
-  - 通用引导（不带agent_id）：不包含身份头部，兼容现有功能
+- **Personalized guide test passed**:
+  - planner personalized guide: header clearly states "You are Planner Agent, ID is planner, role is task breakdown/solution review..."
+  - builder personalized guide: header clearly states "You are Executor Agent, ID is builder, role is frontend/backend development..."
+  - Generic guide (without agent_id): no identity header, compatible with existing functionality
 
-### 兼容性
+### Compatibility
 
-- 旧项目升级：无需迁移，自动兼容
-  - 旧项目没有AGENT_ONBOARDING.md时，/api/onboarding动态生成
-  - 旧项目的agents配置兼容（字符串列表和对象列表都支持）
-- 通用引导功能保留：不带agent_id参数时行为不变
-- API模式自动触发功能保留：webhook推送和API模式触发互不干扰，可同时使用
-
-## [v2.1.1] - 2026-08-30
-
-### 修复
-- **删除项目按钮可见性**：原「项目卡片悬停才显示删除按钮」（`opacity:0`）导致入口不可发现
-  - 右上角 ✕ 改为常显（半透明，悬停高亮）
-  - 项目卡片底部新增明显的红色「删除项目」文字按钮
-  - 删除流程不变（二级确认：范围选择 + 输入项目标识）
+- Legacy project upgrade: no migration needed, auto-compatible
+  - When legacy project has no AGENT_ONBOARDING.md, /api/onboarding dynamically generates
+  - Legacy project agents config compatible (both string list and object list supported)
+- Generic guide functionality preserved: behavior unchanged without agent_id parameter
+- API mode auto-trigger functionality preserved: webhook push and API mode trigger don't interfere, can be used simultaneously
 
 ## [v2.2.0] - 2026-08-30
 
-### 新增功能
-- **新消息提示音**：其他Agent发新消息时自动播放"叮"声提醒
-- **Web Audio合成**：纯前端合成提示音，无需音频文件
-  - 880Hz (A5) + 1320Hz (E6) 正弦波叠加
-  - 指数衰减0.3秒，清脆的"叮"声
-- **智能触发**：
-  - 只有非本人发送的消息才触发
-  - 系统消息不触发
-  - 批量新消息只响一次，不会连续吵
-- **提示音开关**：API设置弹窗中新增「提示音 // NOTIFICATION」分区
-  - 默认开启
-  - localStorage持久化，刷新页面不丢失
-  - 开启时试听一下，让你知道声音效果
+### New Features
 
-### 技术实现
-- Web Audio API (OscillatorNode + GainNode) 合成提示音
-- 轮询检测消息数量变化，对比 lastMessageCount
-- AudioContext 懒加载，用户交互后才初始化（符合浏览器自动播放策略）
+- **New Message Notification Sound**: Auto-plays "ding" sound when other agents send new messages
+- **Web Audio Synthesis**: Pure frontend synthesized notification sound, no audio file needed
+  - 880Hz (A5) + 1320Hz (E6) sine wave叠加
+  - Exponential decay 0.3 seconds, crisp "ding" sound
+- **Smart Trigger**:
+  - Only triggers for messages not sent by self
+  - System messages don't trigger
+  - Batch new messages only ring once, won't continuously annoy
+- **Notification Sound Toggle**: New "Notification // NOTIFICATION" section in API settings modal
+  - Enabled by default
+  - localStorage persistence, doesn't lose on page refresh
+  - Play a preview when enabling, so you know the sound effect
 
-### 测试
-- 页面加载正常（HTTP 200）✅
-- 关键函数和变量齐全 ✅
-- API端点正常 ✅
-- 提示音wav文件生成验证通过 ✅
+### Technical Implementation
+
+- Web Audio API (OscillatorNode + GainNode) synthesizes notification sound
+- Polling detects message count changes, compares lastMessageCount
+- AudioContext lazy loading, only initializes after user interaction (complies with browser autoplay policy)
+
+### Testing
+
+- Page loads normally (HTTP 200) ✅
+- Key functions and variables complete ✅
+- API endpoints normal ✅
+- Notification sound wav file generation verification passed ✅
+
+## [v2.1.1] - 2026-08-30
+
+### Fixes
+
+- **Delete Project Button Visibility**: Original "delete button only shows on project card hover" (`opacity:0`) made entry undiscoverable
+  - Top-right ✕ changed to always visible (semi-transparent, highlight on hover)
+  - Added prominent red "Delete Project" text button at bottom of project card
+  - Deletion flow unchanged (two-level confirmation: scope selection + enter project identifier)
 
 ## [v2.1.0] - 2026-08-30
 
-### 新增功能
-- **项目删除功能**：在项目管理面板（index.html）支持删除项目
-  - 项目卡片悬停显示删除按钮
-  - 二级确认流程，防止误删
-  - 两种删除范围：
-    - **只删数据**：删除看板/配置/日志等数据文件，保留空项目文件夹，可重新配置
-    - **删除一切**：彻底删除整个项目文件夹，需输入项目标识二次确认
-  - 后端 API：`DELETE /api/project`
+### New Features
 
-### 后端
-- 新增 `delete_project()` 函数，支持 data_only 和 all 两种删除模式
-- 新增 `do_DELETE()` 方法处理 DELETE 请求
-- 新增 `_handle_delete_project()` 处理删除逻辑，含安全校验
-- 安全机制：删除整个项目必须输入项目名确认，防止误操作
+- **Project Deletion Feature**: Support deleting projects in project management panel (index.html)
+  - Delete button shows on project card hover
+  - Two-level confirmation flow to prevent accidental deletion
+  - Two deletion scopes:
+    - **Data only**: Delete data files like board/config/logs, keep empty project folder, can be reconfigured
+    - **Delete everything**: Completely delete entire project folder, requires entering project identifier for second confirmation
+  - Backend API: `DELETE /api/project`
 
-### 前端
-- 项目卡片右上角添加删除按钮（悬停显示）
-- 删除确认弹窗：警告提示 + 范围选择 + 输入确认
-- Nothing 风格 UI，红色危险样式
-- 删除成功后自动刷新项目列表
+### Backend
 
-### 测试
-- data_only 模式：正确删除数据文件，保留空文件夹 ✅
-- all 模式无确认：正确拒绝，提示需输入项目名 ✅
-- all 模式错误确认名：正确拒绝 ✅
-- all 模式正确确认名：成功删除整个文件夹 ✅
+- Added `delete_project()` function, supports data_only and all deletion modes
+- Added `do_DELETE()` method to handle DELETE requests
+- Added `_handle_delete_project()` to handle deletion logic, including security validation
+- Security mechanism: deleting entire project requires entering project name confirmation, prevents misoperation
+
+### Frontend
+
+- Added delete button at top-right of project card (shows on hover)
+- Delete confirmation modal: warning prompt + scope selection + input confirmation
+- Nothing style UI, red danger styling
+- Auto-refresh project list after successful deletion
+
+### Testing
+
+- data_only mode: correctly deletes data files, keeps empty folder ✅
+- all mode without confirmation: correctly rejects, prompts to enter project name ✅
+- all mode with wrong confirmation name: correctly rejects ✅
+- all mode with correct confirmation name: successfully deletes entire folder ✅
 
 ## [v2.0.0] - 2026-08-29
 
-### 初始正式版本
-三层渐进式多 Agent 协同看板全功能基线。
+### Initial Official Release
 
-### 功能
-- **混合模式**：消息 `@` 检测 + 一键复制触发指令（手动驱动 Agent）
-- **API 模式**：配置 LLM API 后 `@` 自动触发对应 Agent 回复
-  - Agent 角色定义 + system prompt 模板
-  - AI 回复结构化动作解析（`UPDATE_TASK` / `CLAIM_TASK`）
-  - 防循环机制（链深度限制 + 消息去重）
-  - API 失败处理与自动降级（连续 3 次失败自动关闭自动触发并通知）
-  - api_key 加密存储（base64 / 环境变量 XOR，不落明文）
-- **定时模式**：定时轮询扫描未处理 `@` 消息（5/15/30/60/1440 分钟五档）
-  - 已处理消息去重（`processed_msg_ids.json` 持久化）
-- **工程基础**：跨进程文件锁（fcntl）+ 原子写入防损坏；调用日志 `api_calls.log`；前端 API 设置弹窗、定时设置、思考动画、自动触发开关
+Three-layer progressive multi-agent collaboration board full-feature baseline.
 
-### 文档
-- `README.md`：三种模式使用说明
-- `PROJECT_SUMMARY.md`：项目总结与改进建议
+### Features
 
-### 已知限制
-- T2.5 真实 API key 连通性测试待补验（需真实 key）
-- 真实 key 下的端到端 AI 回复验证待补验
+- **Hybrid Mode**: Message `@` detection + one-click copy trigger command (manually drive agents)
+- **API Mode**: `@` auto-triggers corresponding agent reply after configuring LLM API
+  - Agent role definition + system prompt template
+  - AI reply structured action parsing (`UPDATE_TASK` / `CLAIM_TASK`)
+  - Anti-loop mechanism (chain depth limit + message deduplication)
+  - API failure handling and auto-degradation (3 consecutive failures auto-close auto-trigger and notify)
+  - api_key encrypted storage (base64 / environment variable XOR, no plaintext on disk)
+- **Schedule Mode**: Scheduled polling scans unprocessed `@` messages (5/15/30/60/1440 minutes five levels)
+  - Processed message deduplication (`processed_msg_ids.json` persistence)
+- **Engineering Foundation**: Cross-process file lock (fcntl) + atomic write to prevent corruption; call log `api_calls.log`; frontend API settings modal, schedule settings, thinking animation, auto-trigger toggle
+
+### Documentation
+
+- `README.md`: usage instructions for three modes
+- `PROJECT_SUMMARY.md`: project summary and improvement suggestions
+
+### Known Limitations
+
+- T2.5 real API key connectivity test pending verification (requires real key)
+- End-to-end AI reply verification under real key pending verification
