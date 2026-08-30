@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AgentNexus Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0b0b0c;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #f4f4f5;
+    width: 1440px;
+    height: 900px;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(600px 400px at 80% 0%, rgba(255,54,33,.08), transparent 60%),
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px) 0 0/36px 36px,
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px) 0 0/36px 36px;
+    pointer-events: none;
+  }
+  .title {
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
+  }
+  .title h1 {
+    font-family: 'Silkscreen', monospace;
+    font-size: 22px;
+    color: #f4f4f5;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .title h1 span { color: #ff3621; }
+  .title p {
+    font-size: 13px;
+    color: #8d8d92;
+    letter-spacing: 0.5px;
+  }
+
+  .diagram {
+    position: relative;
+    width: 100%;
+    height: 720px;
+    z-index: 1;
+  }
+
+  /* SVG arrows layer */
+  .arrows {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  /* Node boxes */
+  .node {
+    position: absolute;
+    background: rgba(255,255,255,.04);
+    border: 1.5px solid rgba(255,255,255,.12);
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+  .node.human {
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    border-color: #f4f4f5;
+    background: rgba(244,244,245,.06);
+    min-width: 160px;
+  }
+  .node.planner {
+    left: 8%;
+    top: 200px;
+    border-color: #ff3621;
+    background: rgba(255,54,33,.08);
+    min-width: 200px;
+  }
+  .node.json-center {
+    left: 50%;
+    top: 420px;
+    transform: translateX(-50%);
+    border-color: #ff3621;
+    background: rgba(255,54,33,.1);
+    min-width: 220px;
+    box-shadow: 0 0 40px rgba(255,54,33,.15);
+  }
+  .node.coagent {
+    right: 6%;
+    border-color: rgba(255,255,255,.2);
+    background: rgba(255,255,255,.04);
+    min-width: 180px;
+    padding: 12px 16px;
+  }
+  .node.coagent.c1 { top: 140px; }
+  .node.coagent.c2 { top: 250px; }
+  .node.coagent.c3 { top: 360px; }
+  .node.coagent.c4 { top: 470px; }
+
+  .node .icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+  .node .name {
+    font-family: 'Silkscreen', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .node .role {
+    font-size: 11px;
+    color: #8d8d92;
+    line-height: 1.4;
+  }
+  .node.human .name { color: #f4f4f5; }
+  .node.planner .name { color: #ff3621; }
+  .node.json-center .name { color: #ff3621; font-size: 13px; }
+  .node.coagent .name { color: #a1a1a6; }
+
+  /* Mode labels */
+  .mode-label {
+    position: absolute;
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px;
+    color: #5f5f65;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 4px;
+    padding: 4px 10px;
+  }
+  .mode-label.m1 { left: 28%; top: 110px; }
+  .mode-label.m2 { left: 42%; top: 310px; }
+  .mode-label.m3 { left: 28%; top: 530px; }
+  .mode-label span { color: #ff3621; }
+
+  /* Flow steps */
+  .flow-step {
+    position: absolute;
+    font-size: 10px;
+    color: #5f5f65;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+  }
+  .flow-step.s1 { left: 30%; top: 70px; }
+  .flow-step.s2 { left: 25%; top: 180px; }
+  .flow-step.s3 { left: 42%; top: 380px; }
+  .flow-step.s4 { right: 22%; top: 200px; }
+  .flow-step.s5 { right: 22%; top: 420px; }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: #5f5f65;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+  }
+  .legend-dot.human { background: #f4f4f5; }
+  .legend-dot.planner { background: #ff3621; }
+  .legend-dot.coagent { background: #a1a1a6; }
+  .legend-dot.json { background: #ff3621; border: 2px solid #ff3621; }
+  .legend-dot.arrow-r { background: #ff3621; }
+  .legend-dot.arrow-g { background: #22c55e; }
+</style>
+</head>
+<body>
+  <div class="title">
+    <h1>AgentNexus <span>//</span> How It Works</h1>
+    <p>Multi-Agent Collaboration Architecture · Three Modes · File-Based Synchronization</p>
+  </div>
+
+  <div class="diagram">
+    <!-- SVG arrows -->
+    <svg class="arrows" viewBox="0 0 1360 720">
+      <defs>
+        <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#ff3621"/>
+        </marker>
+        <marker id="arrowGray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#5f5f65"/>
+        </marker>
+        <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#22c55e"/>
+        </marker>
+      </defs>
+
+      <!-- Human → Planner -->
+      <path d="M 680,60 Q 500,80 300,180" stroke="#ff3621" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#arrowRed)"/>
+      
+      <!-- Planner → JSON (write tasks) -->
+      <path d="M 350,280 Q 480,350 600,420" stroke="#ff3621" stroke-width="2.5" fill="none" marker-end="url(#arrowRed)"/>
+      
+      <!-- JSON → CoAgents (read tasks) -->
+      <path d="M 760,440 Q 950,380 1100,200" stroke="#22c55e" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowGreen)"/>
+      <path d="M 760,450 Q 980,400 1100,310" stroke="#22c55e" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowGreen)"/>
+      <path d="M 760,460 Q 980,450 1100,420" stroke="#22c55e" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowGreen)"/>
+      <path d="M 760,470 Q 950,520 1100,530" stroke="#22c55e" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowGreen)"/>
+      
+      <!-- CoAgents → JSON (write results) -->
+      <path d="M 1100,230 Q 950,320 780,430" stroke="#ff3621" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+      <path d="M 1100,340 Q 950,380 780,440" stroke="#ff3621" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+      <path d="M 1100,450 Q 950,460 780,450" stroke="#ff3621" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+      <path d="M 1100,560 Q 950,540 780,470" stroke="#ff3621" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+      
+      <!-- JSON → Planner (verify) -->
+      <path d="M 600,440 Q 450,380 320,300" stroke="#5f5f65" stroke-width="1.5" fill="none" stroke-dasharray="3,3" marker-end="url(#arrowGray)"/>
+      
+      <!-- Planner → Human (report) -->
+      <path d="M 300,220 Q 480,140 660,70" stroke="#5f5f65" stroke-width="1.5" fill="none" stroke-dasharray="3,3" marker-end="url(#arrowGray)"/>
+    </svg>
+
+    <!-- Human -->
+    <div class="node human">
+      <div class="icon">👤</div>
+      <div class="name">HUMAN</div>
+      <div class="role">Initiate Tasks · Review · Approve</div>
+    </div>
+
+    <!-- Planner Agent -->
+    <div class="node planner">
+      <div class="icon">🎯</div>
+      <div class="name">PLANNER AGENT</div>
+      <div class="role">Plan · Break Down · Verify<br/>Task Orchestration</div>
+    </div>
+
+    <!-- JSON Center -->
+    <div class="node json-center">
+      <div class="icon">📄</div>
+      <div class="name">JSON FILE</div>
+      <div class="role">Single Source of Truth<br/>Tasks · Messages · Agent States<br/>Read & Write by All Agents</div>
+    </div>
+
+    <!-- CoAgents -->
+    <div class="node coagent c1">
+      <div class="icon">⚡</div>
+      <div class="name">CO-AGENT 1</div>
+      <div class="role">Execute Task A</div>
+    </div>
+    <div class="node coagent c2">
+      <div class="icon">⚡</div>
+      <div class="name">CO-AGENT 2</div>
+      <div class="role">Execute Task B</div>
+    </div>
+    <div class="node coagent c3">
+      <div class="icon">⚡</div>
+      <div class="name">CO-AGENT 3</div>
+      <div class="role">Execute Task C</div>
+    </div>
+    <div class="node coagent c4">
+      <div class="icon">⚡</div>
+      <div class="name">CO-AGENT N</div>
+      <div class="role">...and more</div>
+    </div>
+
+    <!-- Mode labels -->
+    <div class="mode-label m1"><span>①</span> HYBRID: @mention + Copy Command</div>
+    <div class="mode-label m2"><span>②</span> API MODE: @mention Auto-Trigger</div>
+    <div class="mode-label m3"><span>③</span> SCHEDULE: Periodic JSON Polling</div>
+
+    <!-- Flow steps -->
+    <div class="flow-step s1">① Initiate</div>
+    <div class="flow-step s2">② Plan & Split</div>
+    <div class="flow-step s3">③ Write to JSON</div>
+    <div class="flow-step s4">④ Read & Claim</div>
+    <div class="flow-step s5">⑤ Write Back</div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot human"></div>Human</div>
+      <div class="legend-item"><div class="legend-dot planner"></div>Planner Agent</div>
+      <div class="legend-item"><div class="legend-dot coagent"></div>Co-Agents</div>
+      <div class="legend-item"><div class="legend-dot json"></div>JSON (Data Hub)</div>
+      <div class="legend-item"><div class="legend-dot arrow-r"></div>Write</div>
+      <div class="legend-item"><div class="legend-dot arrow-g"></div>Read</div>
+    </div>
+  </div>
+</body>
+</html>
