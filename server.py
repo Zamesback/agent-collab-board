@@ -83,6 +83,56 @@ def get_project_path(project_name):
     return None
 
 
+def _build_onboarding_md(project_name, project_title, description, workspace, agents):
+    """T9.1: 生成 Agent 接入引导文档（AGENT_ONBOARDING.md）
+
+    供新接入的 AI Agent 阅读：项目信息、看板路径、协作规则、触发方式。
+    """
+    board_path = os.path.join(PROJECTS_ROOT, project_name, "collab_board.json")
+    url = f"http://localhost:8766/collab_board_nothing.html?project={project_name}"
+    agent_lines_list = []
+    for a in agents:
+        if isinstance(a, dict):
+            agent_lines_list.append(f"- **{a.get('name', a['id'])}**（`{a['id']}`）：{a.get('role', '')}")
+        else:
+            agent_lines_list.append(f"- **{a}**（`{a}`）")
+    agent_lines = "\n".join(agent_lines_list)
+    return f"""# {project_title} — Agent 接入引导
+
+本文件是「{project_title}」的 Agent 协作入口。接入本项目的 AI Agent 请先完整阅读本文件。
+
+## 项目信息
+- 项目：{project_title}
+- 描述：{description or '（无）'}
+- 工作区：{workspace or '（未指定）'}
+
+## 看板位置
+- 看板数据文件：`{board_path}`
+- 看板访问地址：{url}
+
+## 已接入 Agent
+{agent_lines}
+
+## 协作规则
+1. 读取看板文件了解项目状态（任务、消息、Agent 列表）
+2. 响应消息中 `@你的名字或ID` 的提及
+3. 处理相关任务，用以下结构化格式更新任务状态：
+   - 认领任务：`[CLAIM_TASK id=任务ID]`
+   - 更新任务：`[UPDATE_TASK id=任务ID status=done progress=100 assignee=xxx]`
+4. 把处理结果作为新消息写回看板文件（追加，不覆盖）
+5. 看板文件是协作的单一事实源，**只做增量修改，绝不整体覆盖**
+
+## 触发方式
+- 混合模式：人类复制触发指令给你（手动）
+- API 模式：配置 LLM API 后 `@` 自动触发
+- 定时模式：定时轮询扫描未处理 `@` 消息
+
+## 版本管理约定
+- 遵守项目 CONTRIBUTING.md 的版本管理、分支、提交规范
+- 敏感文件（project_config.json 等）禁止入库
+"""
+
+
 def create_project(project_name, agents=None, workspace="", handoff="", project_title="", description=""):
     """创建新项目
 
@@ -186,6 +236,21 @@ def create_project(project_name, agents=None, workspace="", handoff="", project_
     config_file = os.path.join(project_path, "project_config.json")
     with open(config_file, "w", encoding="utf-8") as f:
         json.dump(config_data, f, ensure_ascii=False, indent=2)
+
+    # 生成 Agent 接入引导文档（T9.1）
+    try:
+        onboarding_md = _build_onboarding_md(
+            project_name,
+            project_title or project_name,
+            description or "",
+            workspace or "",
+            selected_agents
+        )
+        onboarding_file = os.path.join(project_path, "AGENT_ONBOARDING.md")
+        with open(onboarding_file, "w", encoding="utf-8") as f:
+            f.write(onboarding_md)
+    except Exception as e:
+        print(f"[T9.1] 生成接入引导失败: {e}")
 
     return True, "项目创建成功", project_path
 
@@ -352,6 +417,51 @@ def save_config(data, project=None):
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp_path, config_file)
+
+
+# ===== Agent 入口注册（T8.1）=====
+def register_agent(project, agent_id, entry):
+    """T8.1: 注册 Agent 入口，标记接通状态
+
+    entry: {"type": "http"|"session", "target": "url或会话描述"}
+    注册后 connected=True，记录 registered_at / last_seen，并同步到看板。
+    """
+    config = load_config(project)
+    agents = config.get("agents", [])
+    now = time.strftime("%Y-%m-%dT%H:%M:%S+08:00")
+    found = False
+    for agent in agents:
+        if agent.get("id") == agent_id:
+            agent["entry"] = entry
+            agent["connected"] = True
+            agent["registered_at"] = agent.get("registered_at", now)
+            agent["last_seen"] = now
+            found = True
+            break
+    if not found:
+        # 注册即创建（Agent 首次接入自动加入列表）
+        agents.append({
+            "id": agent_id,
+            "name": agent_id,
+            "role": "",
+            "color": "#a1a1a6",
+            "connected": True,
+            "entry": entry,
+            "registered_at": now,
+            "last_seen": now
+        })
+    config["agents"] = agents
+    save_config(config, project)
+
+    # 同步 agents 到看板，保持一致
+    try:
+        data = load_board(project)
+        data["agents"] = agents
+        save_board(data, project)
+    except Exception as e:
+        print(f"[T8.1] 同步 agents 到看板失败: {e}")
+
+    return True, f"Agent {agent_id} 注册成功"
 
 
 # ===== api_key 加密存储（T2.6）=====
@@ -1315,6 +1425,45 @@ class CollabHandler(SimpleHTTPRequestHandler):
             self._send_json({"messages": data.get("messages", [])})
             return
 
+        # API: Agent 接入状态（T8.1）
+        if parsed.path == "/api/agents/status":
+            config = load_config(project)
+            status = []
+            for a in config.get("agents", []):
+                status.append({
+                    "id": a.get("id"),
+                    "name": a.get("name"),
+                    "role": a.get("role", ""),
+                    "connected": a.get("connected", False),
+                    "entry": a.get("entry"),
+                    "registered_at": a.get("registered_at"),
+                    "last_seen": a.get("last_seen")
+                })
+            self._send_json({"agents": status})
+            return
+
+        # API: Agent 接入引导文本（T9.2）
+        if parsed.path == "/api/onboarding":
+            config = load_config(project)
+            onboarding_content = ""
+            if project:
+                project_path = get_project_path(project)
+                onboarding_file = os.path.join(project_path, "AGENT_ONBOARDING.md")
+                if os.path.exists(onboarding_file):
+                    with open(onboarding_file, "r", encoding="utf-8") as f:
+                        onboarding_content = f.read()
+                else:
+                    # 动态生成（旧项目没有引导文件时兜底）
+                    onboarding_content = _build_onboarding_md(
+                        project,
+                        config.get("project_name", project),
+                        config.get("meta", {}).get("project_desc", ""),
+                        config.get("workspace", ""),
+                        config.get("agents", [])
+                    )
+            self._send_json({"ok": True, "project": project, "content": onboarding_content})
+            return
+
         # API: 获取API状态和统计（T2.4）
         if parsed.path == "/api/api-status":
             config = load_config(project)
@@ -1376,6 +1525,11 @@ class CollabHandler(SimpleHTTPRequestHandler):
         # API: 保存项目配置
         if parsed.path == "/api/config":
             self._handle_save_config(project)
+            return
+
+        # API: Agent 入口注册（T8.1）
+        if parsed.path == "/api/agents/register":
+            self._handle_register_agent(project)
             return
 
         # API: 测试API连接（T2.4）
@@ -1615,6 +1769,31 @@ class CollabHandler(SimpleHTTPRequestHandler):
             save_board(data, project)
 
         self._send_json({"ok": True, "config_saved": True})
+
+    def _handle_register_agent(self, project=None):
+        """T8.1: 注册 Agent 入口"""
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            req = json.loads(body)
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+
+        agent_id = (req.get("agent_id") or "").strip()
+        entry = req.get("entry")
+        if not agent_id:
+            self._send_json({"ok": False, "error": "agent_id 不能为空"})
+            return
+        if entry is not None and not isinstance(entry, dict):
+            self._send_json({"ok": False, "error": "entry 必须是 {type, target} 对象"})
+            return
+        if isinstance(entry, dict) and entry.get("type") not in ("http", "session"):
+            self._send_json({"ok": False, "error": "entry.type 必须是 http 或 session"})
+            return
+
+        success, message = register_agent(project, agent_id, entry)
+        self._send_json({"ok": success, "message": message, "agent_id": agent_id})
 
     def _handle_test_connection(self, project=None):
         """测试API连接（T2.4）"""

@@ -40,6 +40,12 @@
 3. 更新 `CHANGELOG.md`（新版本条目）
 4. merge 到 `main` → 打 tag `vX.Y.Z` → push（`main` + tag）
 
+## 任务分工约定
+
+- 每个需求拆解成任务后，除标注优先级外，**必须同步分配负责人（assignee）**，在看板可查
+- 分工原则：规划 Agent 与执行 Agent 各自认领一部分，避免单点积压
+- 未实现的任务**不得标记 done**；标记 done 的任务必须能在代码中核对到实现
+
 ## 安全约定
 
 - `project_config.json`（含 api_key 加密存储）、`*.lock`、`*.tmp`、`api_calls.log` 已在 `.gitignore`，**禁止**提交

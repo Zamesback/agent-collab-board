@@ -682,6 +682,31 @@
     color: #fff;
   }
 
+  /* ===== 接入引导按钮（T9.2）===== */
+  .onboard-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--line-2);
+    border-radius: 3px;
+    color: var(--dim);
+    font-family: var(--pixel);
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+  .onboard-btn:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .onboard-btn.copied {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
   /* ===== 自动触发开关 + AI思考动画（T3.5/T3.6）===== */
   .auto-trigger-ctl {
     display: flex;
@@ -983,6 +1008,42 @@
     border-radius: var(--radius-sm);
     padding: 10px 12px;
   }
+  .agent-status-list {
+    margin-top: 12px;
+  }
+  .agent-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 12px;
+    gap: 10px;
+  }
+  .agent-status-row:last-of-type { border-bottom: none; }
+  .agent-status-name { color: var(--text); font-weight: 500; }
+  .agent-status-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+  .agent-status-badge.online {
+    color: var(--green);
+    border: 1px solid var(--green);
+    background: rgba(34,197,94,.1);
+  }
+  .agent-status-badge.offline {
+    color: var(--dim-2);
+    border: 1px solid var(--line-2);
+  }
+  .agent-status-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim-2);
+  }
 
   /* 滚动条 — Nothing 风格 */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -1040,6 +1101,7 @@
         <label class="switch small"><input type="checkbox" id="auto-trigger-toggle" onchange="toggleAutoTrigger()" /><span class="slider"></span></label>
       </div>
       <button class="global-copy-btn" id="global-copy-btn" onclick="copyGlobalTrigger()">复制检查指令 // COPY</button>
+      <button class="onboard-btn" id="onboard-btn" onclick="copyOnboardingGuide()">接入引导 // GUIDE</button>
     </div>
     <div class="ai-thinking" id="ai-thinking"><span>AI 正在思考</span><i></i><i></i><i></i></div>
     <div class="chat-messages" id="chat-messages"></div>
@@ -1106,6 +1168,8 @@
       <span>新消息提示音（其他Agent发消息时"叮"一声）</span>
       <label class="switch"><input type="checkbox" id="notification-sound-input" onchange="toggleNotificationSound(this.checked)" /><span class="slider"></span></label>
     </div>
+    <div class="api-section-title">Agent 接入状态 // STATUS</div>
+    <div class="agent-status-list" id="agent-status-list"></div>
     <div class="api-test-result" id="api-test-result"></div>
     <div class="api-actions">
       <button class="status-btn" onclick="testApiConnection()">测试连接</button>
@@ -1122,6 +1186,7 @@ let currentIdentity = 'user';
 let selectedTaskId = null;
 let lastMessageCount = 0;
 let autoScroll = true;
+let agentStatusTimer = null;  // T8.3 Agent 接入状态轮询
 
 // ===== 新消息提示音（T7.1-T7.2）=====
 let notificationSoundEnabled = localStorage.getItem('notificationSoundEnabled') !== 'false'; // 默认开
@@ -1571,6 +1636,31 @@ async function copyGlobalTrigger() {
   }
 }
 
+// ===== 复制 Agent 接入引导（T9.2）=====
+async function copyOnboardingGuide() {
+  const btn = document.getElementById('onboard-btn');
+  try {
+    const resp = await fetch('/api/onboarding');
+    const data = await resp.json();
+    const text = data.content || '';
+    if (!text) {
+      console.error('接入引导为空');
+      return;
+    }
+    const ok = await copyToClipboard(text);
+    if (ok && btn) {
+      btn.textContent = '已复制 // COPIED';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '接入引导 // GUIDE';
+        btn.classList.remove('copied');
+      }, 2500);
+    }
+  } catch (e) {
+    console.error('获取接入引导失败:', e);
+  }
+}
+
 // ===== API 设置弹窗（T2.2）=====
 let apiModalData = null;
 
@@ -1589,6 +1679,10 @@ async function openApiSettings() {
     loadScheduleStatus();
     // 初始化提示音开关
     document.getElementById('notification-sound-input').checked = notificationSoundEnabled;
+    // Agent 接入状态（T8.3）：打开时加载并每5秒刷新
+    loadAgentStatus();
+    clearInterval(agentStatusTimer);
+    agentStatusTimer = setInterval(loadAgentStatus, 5000);
     const resultEl = document.getElementById('api-test-result');
     resultEl.textContent = '';
     resultEl.className = 'api-test-result';
@@ -1601,6 +1695,7 @@ async function openApiSettings() {
 }
 
 function closeApiSettings() {
+  clearInterval(agentStatusTimer);
   document.getElementById('api-overlay').classList.remove('show');
   document.getElementById('api-modal').classList.remove('show');
 }
@@ -1694,6 +1789,47 @@ function updateScheduleInfo(s) {
   const fmt = (t) => t ? t.replace('T', ' ').replace('+08:00', '') : '未启动';
   const state = s.running ? '运行中' : (s.enabled ? '已启用（等待首次触发）' : '已关闭');
   el.innerHTML = `状态: ${state}<br>下次触发: ${fmt(s.next_run_time)}<br>上次触发: ${fmt(s.last_run_time)}<br>累计触发: ${s.total_runs || 0} 次`;
+}
+
+// ===== Agent 接入状态（T8.3）=====
+function escapeHtmlSafe(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadAgentStatus() {
+  const list = document.getElementById('agent-status-list');
+  if (!list) return;
+  try {
+    const resp = await fetch('/api/agents/status');
+    const data = await resp.json();
+    const agents = data.agents || [];
+    if (!agents.length) {
+      list.innerHTML = '<div class="agent-status-meta">暂无 Agent 注册</div>';
+      return;
+    }
+    list.innerHTML = agents.map(a => {
+      const online = !!a.connected;
+      const lastSeen = a.last_seen
+        ? a.last_seen.replace('T', ' ').replace('+08:00', '').slice(5, 16)
+        : '—';
+      const entry = a.entry
+        ? (a.entry.type + ':' + String(a.entry.target || '').slice(0, 28))
+        : '未声明入口';
+      return `
+        <div class="agent-status-row">
+          <div>
+            <span class="agent-status-name">${escapeHtmlSafe(a.name || a.id)}</span>
+            <div class="agent-status-meta">${escapeHtmlSafe(entry)}</div>
+          </div>
+          <div style="text-align:right;">
+            <span class="agent-status-badge ${online ? 'online' : 'offline'}">${online ? 'ONLINE' : 'OFFLINE'}</span>
+            <div class="agent-status-meta">活跃 ${escapeHtmlSafe(lastSeen)}</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('加载Agent状态失败:', e);
+  }
 }
 
 async function saveScheduleConfig() {
