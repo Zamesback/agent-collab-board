@@ -902,6 +902,62 @@
   .onboard-btn-primary:hover { background: #e02e1c; }
   .onboard-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* Agent选择器样式 */
+  .onboard-agent-select-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--panel-2);
+  }
+  .onboard-agent-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .onboard-agent-option:last-child { border-bottom: none; }
+  .onboard-agent-option:hover { background: rgba(255,54,33,.05); }
+  .onboard-agent-option.selected {
+    background: rgba(255,54,33,.1);
+    border-left: 3px solid var(--red);
+  }
+  .onboard-agent-option-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .onboard-agent-option-name {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .onboard-agent-option-role {
+    font-size: 11px;
+    color: var(--dim);
+    font-family: var(--mono);
+  }
+  .onboard-agent-option-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--line-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--red);
+    transition: all 0.2s;
+  }
+  .onboard-agent-option.selected .onboard-agent-option-check {
+    border-color: var(--red);
+    background: rgba(255,54,33,.15);
+  }
+
   /* ===== 自动触发开关 + AI思考动画（T3.5/T3.6）===== */
   .auto-trigger-ctl {
     display: flex;
@@ -1895,17 +1951,20 @@ async function copyOnboardingGuide() {
 let onboardCurrentStep = 1;
 let onboardGuideContent = '';
 let onboardStatusCheckTimer = null;
+let onboardAgentsList = [];
+let onboardSelectedAgent = null;
 
 async function openOnboardingGuide() {
   onboardCurrentStep = 1;
-  // 先获取接入引导内容
+  onboardSelectedAgent = null;
+  // 获取Agent列表
   try {
-    const resp = await fetch('/api/onboarding');
+    const resp = await fetch('/api/agents/status');
     const data = await resp.json();
-    onboardGuideContent = data.content || '';
+    onboardAgentsList = data.agents || [];
   } catch (e) {
-    console.error('获取接入引导失败:', e);
-    onboardGuideContent = '';
+    console.error('获取Agent列表失败:', e);
+    onboardAgentsList = [];
   }
   document.getElementById('onboard-overlay').classList.add('show');
   renderOnboardingStep();
@@ -1933,21 +1992,37 @@ function renderOnboardingStep() {
   const actionsEl = document.getElementById('onboard-actions');
 
   if (onboardCurrentStep === 1) {
-    // 第一步：复制接入引导
-    contentEl.innerHTML = `
-      <div class="onboard-step-title">第一步：复制接入引导</div>
-      <div class="onboard-step-desc">
-        点击下方按钮，将项目配置、看板路径、协作规则等接入信息复制到剪贴板。
-        这些信息包含了 Agent 接入所需的全部配置，无需手动搬运。
+    // 第一步：选择Agent + 复制专属接入引导
+    const agentOptions = onboardAgentsList.map(a => `
+      <div class="onboard-agent-option ${onboardSelectedAgent === a.id ? 'selected' : ''}" onclick="selectOnboardingAgent('${a.id}')">
+        <div class="onboard-agent-option-info">
+          <span class="onboard-agent-option-name">${escapeHtmlSafe(a.name || a.id)}</span>
+          <span class="onboard-agent-option-role">${escapeHtmlSafe(a.role || '未指定角色')}</span>
+        </div>
+        <div class="onboard-agent-option-check">${onboardSelectedAgent === a.id ? '✓' : ''}</div>
       </div>
-      <button class="onboard-copy-btn" id="onboard-copy-btn" onclick="copyOnboardingContent()">
-        复制接入引导 // COPY GUIDE
+    `).join('');
+
+    const copyBtnDisabled = onboardSelectedAgent ? '' : 'disabled';
+    const copyBtnText = onboardSelectedAgent ? '复制专属接入引导 // COPY' : '请先选择 Agent';
+
+    contentEl.innerHTML = `
+      <div class="onboard-step-title">第一步：选择 Agent 并复制引导</div>
+      <div class="onboard-step-desc">
+        先选择你要接入的 Agent，然后复制为它生成的专属接入引导。
+        专属引导开头会明确告诉 Agent 它的身份、ID 和角色，无需手动补充。
+      </div>
+      <div class="onboard-agent-select-list">
+        ${agentOptions || '<div style="text-align:center;color:var(--dim-2);padding:20px;">暂无 Agent，请先在项目设置中添加</div>'}
+      </div>
+      <button class="onboard-copy-btn" id="onboard-copy-btn" onclick="copyOnboardingContent()" ${copyBtnDisabled}>
+        ${copyBtnText}
       </button>
-      <div class="onboard-hint">复制后请将内容粘贴给要接入的 AI Agent</div>
+      <div class="onboard-hint">选择 Agent 后，复制按钮才会启用</div>
     `;
     actionsEl.innerHTML = `
       <button class="onboard-btn-secondary" onclick="closeOnboardingGuide()">取消</button>
-      <button class="onboard-btn-primary" onclick="nextOnboardingStep()" id="onboard-next-btn" disabled>下一步</button>
+      <button class="onboard-btn-primary" onclick="nextOnboardingStep()" id="onboard-next-btn" ${onboardGuideContent ? '' : 'disabled'}>下一步</button>
     `;
   } else if (onboardCurrentStep === 2) {
     // 第二步：粘贴给Agent
@@ -1985,16 +2060,28 @@ function renderOnboardingStep() {
   }
 }
 
+function selectOnboardingAgent(agentId) {
+  onboardSelectedAgent = agentId;
+  onboardGuideContent = ''; // 重置，需要重新获取专属引导
+  renderOnboardingStep();
+}
+
 async function copyOnboardingContent() {
+  if (!onboardSelectedAgent) {
+    showToast('请先选择一个 Agent');
+    return;
+  }
+  // 根据选择的Agent获取专属接入引导
+  try {
+    const resp = await fetch(`/api/onboarding?agent_id=${encodeURIComponent(onboardSelectedAgent)}`);
+    const data = await resp.json();
+    onboardGuideContent = data.content || '';
+  } catch (e) {
+    console.error('获取专属接入引导失败:', e);
+  }
   if (!onboardGuideContent) {
-    // 重新获取
-    try {
-      const resp = await fetch('/api/onboarding');
-      const data = await resp.json();
-      onboardGuideContent = data.content || '';
-    } catch (e) {
-      console.error('获取接入引导失败:', e);
-    }
+    showToast('获取接入引导失败');
+    return;
   }
   const ok = await copyToClipboard(onboardGuideContent);
   const btn = document.getElementById('onboard-copy-btn');
@@ -2003,7 +2090,7 @@ async function copyOnboardingContent() {
     btn.textContent = '已复制 // COPIED ✓';
     btn.classList.add('copied');
     if (nextBtn) nextBtn.disabled = false;
-    showToast('接入引导已复制到剪贴板');
+    showToast('专属接入引导已复制到剪贴板');
   }
 }
 

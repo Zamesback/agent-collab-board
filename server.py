@@ -83,10 +83,11 @@ def get_project_path(project_name):
     return None
 
 
-def _build_onboarding_md(project_name, project_title, description, workspace, agents):
+def _build_onboarding_md(project_name, project_title, description, workspace, agents, agent_id=None):
     """T9.1: 生成 Agent 接入引导文档（AGENT_ONBOARDING.md）
 
     供新接入的 AI Agent 阅读：项目信息、看板路径、协作规则、触发方式。
+    如果指定 agent_id，则生成专属接入引导，开头明确身份信息。
     """
     board_path = os.path.join(PROJECTS_ROOT, project_name, "collab_board.json")
     url = f"http://localhost:8766/collab_board_nothing.html?project={project_name}"
@@ -97,9 +98,33 @@ def _build_onboarding_md(project_name, project_title, description, workspace, ag
         else:
             agent_lines_list.append(f"- **{a}**（`{a}`）")
     agent_lines = "\n".join(agent_lines_list)
+
+    # 如果指定了agent_id，生成专属身份头部
+    identity_header = ""
+    if agent_id:
+        target_agent = None
+        for a in agents:
+            if isinstance(a, dict) and a.get("id") == agent_id:
+                target_agent = a
+                break
+        if target_agent:
+            agent_name = target_agent.get("name", agent_id)
+            agent_role = target_agent.get("role", "")
+            identity_header = f"""## 你的身份
+
+你是 **{agent_name}**，你的 Agent ID 是 `{agent_id}`。
+你的角色是：{agent_role or '（未指定）'}
+
+请在注册时使用这个 ID：`{agent_id}`
+在看板中发消息时，sender 字段请填写：`{agent_id}`
+
+---
+
+"""
+
     return f"""# {project_title} — Agent 接入引导
 
-本文件是「{project_title}」的 Agent 协作入口。接入本项目的 AI Agent 请先完整阅读本文件。
+{identity_header}本文件是「{project_title}」的 Agent 协作入口。接入本项目的 AI Agent 请先完整阅读本文件。
 
 ## 项目信息
 - 项目：{project_title}
@@ -126,6 +151,22 @@ def _build_onboarding_md(project_name, project_title, description, workspace, ag
 - 混合模式：人类复制触发指令给你（手动）
 - API 模式：配置 LLM API 后 `@` 自动触发
 - 定时模式：定时轮询扫描未处理 `@` 消息
+- Webhook 推送：注册 HTTP webhook 后，`@` 消息实时推送给你
+
+## 注册方式
+调用注册 API 接入看板：
+```
+POST /api/agents/register?project={project_name}
+Content-Type: application/json
+
+{{
+  "agent_id": "{agent_id or '你的ID'}",
+  "entry": {{
+    "type": "http",
+    "target": "你的webhook地址"
+  }}
+}}
+```
 
 ## 版本管理约定
 - 遵守项目 CONTRIBUTING.md 的版本管理、分支、提交规范
@@ -1570,23 +1611,28 @@ class CollabHandler(SimpleHTTPRequestHandler):
         # API: Agent 接入引导文本（T9.2）
         if parsed.path == "/api/onboarding":
             config = load_config(project)
+            # 支持agent_id参数，生成专属接入引导
+            params = parse_qs(parsed.query)
+            agent_id = params.get("agent_id", [None])[0]
             onboarding_content = ""
             if project:
                 project_path = get_project_path(project)
                 onboarding_file = os.path.join(project_path, "AGENT_ONBOARDING.md")
-                if os.path.exists(onboarding_file):
+                if os.path.exists(onboarding_file) and not agent_id:
+                    # 通用引导：读取文件
                     with open(onboarding_file, "r", encoding="utf-8") as f:
                         onboarding_content = f.read()
                 else:
-                    # 动态生成（旧项目没有引导文件时兜底）
+                    # 专属引导（指定agent_id）或旧项目没有引导文件时，动态生成
                     onboarding_content = _build_onboarding_md(
                         project,
                         config.get("project_name", project),
                         config.get("meta", {}).get("project_desc", ""),
                         config.get("workspace", ""),
-                        config.get("agents", [])
+                        config.get("agents", []),
+                        agent_id=agent_id
                     )
-            self._send_json({"ok": True, "project": project, "content": onboarding_content})
+            self._send_json({"ok": True, "project": project, "agent_id": agent_id, "content": onboarding_content})
             return
 
         # API: 获取API状态和统计（T2.4）
