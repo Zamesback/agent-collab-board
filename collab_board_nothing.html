@@ -1957,15 +1957,21 @@ let onboardSelectedAgent = null;
 async function openOnboardingGuide() {
   onboardCurrentStep = 1;
   onboardSelectedAgent = null;
-  // 获取Agent列表
-  try {
-    const resp = await fetch('/api/agents/status');
-    const data = await resp.json();
-    onboardAgentsList = data.agents || [];
-    console.log('[Onboarding] 获取Agent列表成功，数量:', onboardAgentsList.length);
-  } catch (e) {
-    console.error('[Onboarding] 获取Agent列表失败:', e);
-    onboardAgentsList = [];
+  // 优先从已加载的看板数据获取Agent列表（更可靠）
+  if (boardData && boardData.agents && boardData.agents.length > 0) {
+    onboardAgentsList = boardData.agents;
+    console.log('[Onboarding] 从boardData获取Agent列表，数量:', onboardAgentsList.length);
+  } else {
+    // 兜底：调用API获取
+    try {
+      const resp = await fetch('/api/agents/status');
+      const data = await resp.json();
+      onboardAgentsList = data.agents || [];
+      console.log('[Onboarding] 从API获取Agent列表成功，数量:', onboardAgentsList.length);
+    } catch (e) {
+      console.error('[Onboarding] 获取Agent列表失败:', e);
+      onboardAgentsList = [];
+    }
   }
   document.getElementById('onboard-overlay').classList.add('show');
   renderOnboardingStep();
