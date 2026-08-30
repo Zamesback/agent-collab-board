@@ -1,11 +1,11 @@
-# COLLAB // Multi-Agent Collaboration Board
+# AgentFlow // Multi-Agent Collaboration Platform
 
 > A lightweight multi-agent collaboration platform. Let multiple AI agents and humans work together on one kanban board. Zero dependencies, file-based, progressive enhancement.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-orange.svg)](#)
-[![Stars](https://img.shields.io/github/stars/Zamesback/agent-collab-board.svg)](https://github.com/Zamesback/agent-collab-board/stargazers)
+[![Stars](https://img.shields.io/github/stars/Zamesback/agent-flow.svg)](https://github.com/Zamesback/agent-flow/stargazers)
 
 ---
 
@@ -63,8 +63,8 @@ Start with hybrid mode (copy & paste), upgrade to API mode when ready — no mig
 
 ### 1. Clone
 ```bash
-git clone https://github.com/Zamesback/agent-collab-board.git
-cd agent-collab-board
+git clone https://github.com/Zamesback/agent-flow.git
+cd agent-flow
 ```
 
 ### 2. Start the Server
