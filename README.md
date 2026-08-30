@@ -1,4 +1,4 @@
-# COLLAB // 多Agent协同看板
+# COLLAB // 多Agent协同
 
 > 一个轻量级的多Agent协同工作平台，让多个AI Agent和人类在同一个看板上协作完成项目。
 
