@@ -1,11 +1,11 @@
-# AgentFlow // Multi-Agent Collaboration Platform
+# AgentNexus // Multi CoAgent Collaboration Platform
 
 > A lightweight multi-agent collaboration platform. Let multiple AI agents and humans work together on one kanban board. Zero dependencies, file-based, progressive enhancement.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-orange.svg)](#)
-[![Stars](https://img.shields.io/github/stars/Zamesback/agent-flow.svg)](https://github.com/Zamesback/agent-flow/stargazers)
+[![Stars](https://img.shields.io/github/stars/Zamesback/agent-nexus.svg)](https://github.com/Zamesback/agent-nexus/stargazers)
 
 ---
 
@@ -63,8 +63,8 @@ Start with hybrid mode (copy & paste), upgrade to API mode when ready — no mig
 
 ### 1. Clone
 ```bash
-git clone https://github.com/Zamesback/agent-flow.git
-cd agent-flow
+git clone https://github.com/Zamesback/agent-nexus.git
+cd agent-nexus
 ```
 
 ### 2. Start the Server
