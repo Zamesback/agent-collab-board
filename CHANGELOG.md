@@ -2,6 +2,22 @@
 
 This file records version changes for AgentNexus. Version numbers follow Semantic Versioning (SemVer): `MAJOR.MINOR.PATCH`.
 
+## [v2.3.1] - 2026-08-30
+
+### Bug Fixes
+
+- **Agent selection not responding in onboarding step 1**: Clicking on agent options had no response
+  - **Root cause**: `fetch('/api/agents/status')` API call failed with `TypeError: Failed to fetch`, resulting in empty agent list. Step 1 displayed "No agents" with no clickable options, making users think clicks were not responding.
+  - **Fix**: Prioritize getting agent list from already-loaded `boardData.agents` instead of making a separate API call. Fallback to `/api/agents/status` only when `boardData` is not available. More reliable, reduces one API call, avoids fetch failure issues.
+  - **Improvement**: Replaced inline `onclick` attributes with direct `addEventListener` click listeners on each agent option for more reliable event binding on dynamically generated HTML.
+  - **Debugging**: Added `[Onboarding]` prefixed console logs at key points (agent list fetch, step render, agent click, selection) for easier troubleshooting.
+
+### Technical Changes
+
+- `openOnboardingGuide()`: Now reads from `boardData.agents` first, API call as fallback
+- `renderOnboardingStep()`: Direct click event listeners on `.onboard-agent-option` elements after rendering
+- Removed event delegation approach in favor of direct listeners for simplicity and reliability
+
 ## [v2.3.0] - 2026-08-30
 
 ### New Features
