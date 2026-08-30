@@ -71,6 +71,15 @@ Start with hybrid mode (copy & paste), upgrade to API mode when ready — no mig
 - Create project wizard: name / description / agents / workspace / handoff docs
 - Each project fully isolated with independent data, no cross-contamination
 - Configurable root directory (default: `~/agent-collab-projects/`)
+- **Delete project** (v2.1): Two-level confirmation, two scopes — data-only (keep folder) or delete everything
+
+### Project Deletion (v2.1)
+- Hover over project card to reveal delete button
+- Two-level confirmation dialog prevents accidental deletion
+- Two deletion scopes:
+  - **Data Only**: Removes board/config/log files, keeps empty folder for reconfiguration
+  - **Delete Everything**: Removes entire project folder, requires typing project ID to confirm
+- API: `DELETE /api/project` with `project_name`, `scope`, and optional `confirm_name`
 
 ### UI Design
 - **Nothing Style**: Dark theme + red accent color + pixel fonts + grid background
