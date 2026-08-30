@@ -28,6 +28,26 @@ Select agents, configure workspace, paste handoff docs — launch your project i
 
 ---
 
+## 🏗️ Architecture
+
+How multiple agents collaborate through a single JSON file. Human initiates, Planner orchestrates, Co-Agents execute in parallel — all synchronized via file-based read/write.
+
+![Architecture Diagram](docs/screenshots/04-architecture.png)
+
+**Flow**:
+1. **Human** initiates tasks and reviews results
+2. **Planner Agent** plans, breaks down, and verifies tasks
+3. **JSON File** acts as the single source of truth (tasks, messages, agent states)
+4. **Multiple Co-Agents** read from JSON, claim tasks, execute, and write results back
+5. **Planner Agent** verifies completion and reports back to Human
+
+**Three Collaboration Modes**:
+- **Hybrid**: `@mention` + one-click copy trigger command (manual)
+- **API Mode**: `@mention` auto-triggers agents via LLM API
+- **Schedule Mode**: Periodic JSON polling, auto-trigger agents
+
+---
+
 ## Features
 
 ### Core Capabilities
