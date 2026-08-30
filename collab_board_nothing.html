@@ -1101,6 +1101,11 @@
       </select>
     </div>
     <div class="schedule-info" id="schedule-info"></div>
+    <div class="api-section-title">提示音 // NOTIFICATION</div>
+    <div class="api-toggle-row">
+      <span>新消息提示音（其他Agent发消息时"叮"一声）</span>
+      <label class="switch"><input type="checkbox" id="notification-sound-input" onchange="toggleNotificationSound(this.checked)" /><span class="slider"></span></label>
+    </div>
     <div class="api-test-result" id="api-test-result"></div>
     <div class="api-actions">
       <button class="status-btn" onclick="testApiConnection()">测试连接</button>
@@ -1117,6 +1122,54 @@ let currentIdentity = 'user';
 let selectedTaskId = null;
 let lastMessageCount = 0;
 let autoScroll = true;
+
+// ===== 新消息提示音（T7.1-T7.2）=====
+let notificationSoundEnabled = localStorage.getItem('notificationSoundEnabled') !== 'false'; // 默认开
+let audioContext = null;
+
+function initAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}
+
+function playNotificationSound() {
+  if (!notificationSoundEnabled) return;
+  try {
+    initAudioContext();
+    const now = audioContext.currentTime;
+    // "叮"声：两个正弦波叠加，指数衰减
+    const osc1 = audioContext.createOscillator();
+    const osc2 = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc1.type = 'sine';
+    osc2.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now); // A5
+    osc2.frequency.setValueAtTime(1320, now); // E6，泛音
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(audioContext.destination);
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.3);
+    osc2.stop(now + 0.3);
+  } catch (e) {
+    console.warn('播放提示音失败:', e);
+  }
+}
+
+function toggleNotificationSound(enabled) {
+  notificationSoundEnabled = enabled;
+  localStorage.setItem('notificationSoundEnabled', enabled ? 'true' : 'false');
+  if (enabled) {
+    playNotificationSound(); // 开启时试听一下
+  }
+}
 
 // ===== 多项目支持（v2.0）=====
 // 从URL获取当前项目名，如 ?project=test-project
@@ -1389,6 +1442,16 @@ function renderChat() {
   document.getElementById('msg-count').textContent = messages.length;
 
   if (messages.length === lastMessageCount && container.children.length > 0) return;
+
+  // 检测新消息（非本人发送），播放提示音（批量只响一次）
+  if (lastMessageCount > 0 && messages.length > lastMessageCount) {
+    const newMessages = messages.slice(lastMessageCount);
+    const hasOtherMessage = newMessages.some(m => m.sender !== currentIdentity && m.sender !== 'system');
+    if (hasOtherMessage) {
+      playNotificationSound();
+    }
+  }
+
   lastMessageCount = messages.length;
 
   container.innerHTML = messages.map(m => renderMessage(m)).join('');
@@ -1524,6 +1587,8 @@ async function openApiSettings() {
     document.getElementById('api-enabled-input').checked = !!api.enabled;
     document.getElementById('api-auto-trigger-input').checked = !!api.auto_trigger;
     loadScheduleStatus();
+    // 初始化提示音开关
+    document.getElementById('notification-sound-input').checked = notificationSoundEnabled;
     const resultEl = document.getElementById('api-test-result');
     resultEl.textContent = '';
     resultEl.className = 'api-test-result';
