@@ -1953,7 +1953,6 @@ let onboardGuideContent = '';
 let onboardStatusCheckTimer = null;
 let onboardAgentsList = [];
 let onboardSelectedAgent = null;
-let onboardEventListenerAdded = false;
 
 async function openOnboardingGuide() {
   onboardCurrentStep = 1;
@@ -1963,30 +1962,13 @@ async function openOnboardingGuide() {
     const resp = await fetch('/api/agents/status');
     const data = await resp.json();
     onboardAgentsList = data.agents || [];
+    console.log('[Onboarding] 获取Agent列表成功，数量:', onboardAgentsList.length);
   } catch (e) {
-    console.error('获取Agent列表失败:', e);
+    console.error('[Onboarding] 获取Agent列表失败:', e);
     onboardAgentsList = [];
   }
   document.getElementById('onboard-overlay').classList.add('show');
   renderOnboardingStep();
-
-  // 添加事件委托监听器（只添加一次）
-  if (!onboardEventListenerAdded) {
-    const contentEl = document.getElementById('onboard-content');
-    if (contentEl) {
-      contentEl.addEventListener('click', function(e) {
-        // 事件委托：点击Agent选项
-        const option = e.target.closest('.onboard-agent-option');
-        if (option) {
-          const agentId = option.getAttribute('data-agent-id');
-          if (agentId) {
-            selectOnboardingAgent(agentId);
-          }
-        }
-      });
-      onboardEventListenerAdded = true;
-    }
-  }
 }
 
 function closeOnboardingGuide(event) {
@@ -2039,6 +2021,18 @@ function renderOnboardingStep() {
       </button>
       <div class="onboard-hint">选择 Agent 后，复制按钮才会启用</div>
     `;
+    // 直接给每个Agent选项添加click监听器（更可靠）
+    const agentOptionEls = contentEl.querySelectorAll('.onboard-agent-option');
+    agentOptionEls.forEach(function(optionEl) {
+      optionEl.addEventListener('click', function() {
+        const agentId = optionEl.getAttribute('data-agent-id');
+        console.log('[Onboarding] 点击了Agent:', agentId);
+        if (agentId) {
+          selectOnboardingAgent(agentId);
+        }
+      });
+    });
+    console.log('[Onboarding] 第一步渲染完成，Agent选项数量:', agentOptionEls.length, '，列表长度:', onboardAgentsList.length);
     actionsEl.innerHTML = `
       <button class="onboard-btn-secondary" onclick="closeOnboardingGuide()">取消</button>
       <button class="onboard-btn-primary" onclick="nextOnboardingStep()" id="onboard-next-btn" ${onboardGuideContent ? '' : 'disabled'}>下一步</button>
@@ -2080,9 +2074,11 @@ function renderOnboardingStep() {
 }
 
 function selectOnboardingAgent(agentId) {
+  console.log('[Onboarding] selectOnboardingAgent被调用，agentId:', agentId);
   onboardSelectedAgent = agentId;
   onboardGuideContent = ''; // 重置，需要重新获取专属引导
   renderOnboardingStep();
+  console.log('[Onboarding] 已选择Agent:', agentId, '，重新渲染完成');
 }
 
 async function copyOnboardingContent() {
